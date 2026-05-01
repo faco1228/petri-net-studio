@@ -1,0 +1,29 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/inc",
+                "${workspaceFolder}/src/model",
+                "${workspaceFolder}/src/engine",
+                "${workspaceFolder}/src/codegen",
+                "${workspaceFolder}/src/network",
+                "${workspaceFolder}/src/gui",
+                "/opt/homebrew/Cellar/qtbase/6.11.0/lib/QtWidgets.framework/Versions/A/Headers",
+                "/opt/homebrew/Cellar/qtbase/6.11.0/lib/QtCore.framework/Versions/A/Headers",
+                "/opt/homebrew/Cellar/qtbase/6.11.0/lib/QtGui.framework/Versions/A/Headers",
+                "/opt/homebrew/Cellar/qtbase/6.11.0/lib/QtNetwork.framework/Versions/A/Headers",
+                "/opt/homebrew/Cellar/qtbase/6.11.0/lib/QtOpenGL.framework/Versions/A/Headers"
+            ],
+            "defines": [],
+            "cppStandard": "c++17",
+            "macFrameworkPath": [
+                "/opt/homebrew/Cellar/qtbase/6.11.0/lib"
+            ],
+            "compilerPath": "/usr/bin/clang++",
+            "intelliSenseMode": "macos-clang-x64"
+        }
+    ],
+    "version": 4
+}

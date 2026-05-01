@@ -1,0 +1,85 @@
+# Timer Off with configurable timeout and remaining time query
+
+Jméno sítě:
+    TOF_PN
+
+Komentář:
+    Timer to off, can set timeout and report remaining time on request.
+
+Vstupy:
+    in
+    set_to
+    req_rt
+
+Výstupy:
+    out
+    rt
+
+Proměnné:
+    int timeout = 5000
+
+Místa (počáteční tokeny, volitelně akce):
+    IDLE   (1) pos: 80,80   : { output("out", 0); output("rt", 0); }
+    ACTIVE (0) pos: 280,80  : { output("out", 1); output("rt", timeout); }
+    TIMING (0) pos: 480,80  : { output("rt", timeout - elapsed("TIMING")); }
+
+Přechody a jejich podmínky:
+T_on pos: 180,220 :
+    in:  IDLE*1
+    out: ACTIVE*1
+    when: in [ atoi(valueof("in")) == 1 ]
+    do: { if (defined("set_to")) { timeout = atoi(valueof("set_to")); } }
+
+T_off_start pos: 380,220 :
+    in:  ACTIVE*1
+    out: TIMING*1
+    when: in [ atoi(valueof("in")) == 0 ]
+    do: { if (defined("set_to")) { timeout = atoi(valueof("set_to")); } }
+
+T_cancel_off pos: 380,80 :
+    in:  TIMING*1
+    out: ACTIVE*1
+    when: in [ atoi(valueof("in")) == 1 ]
+    do: { if (defined("set_to")) { timeout = atoi(valueof("set_to")); } }
+
+T_timeout_off pos: 580,220 :
+    in:  TIMING*1
+    out: IDLE*1
+    when: @ timeout
+    do: { if (defined("set_to")) { timeout = atoi(valueof("set_to")); } }
+
+T_set_idle pos: 80,360 :
+    in:  IDLE*1
+    out: IDLE*1
+    when: set_to
+    do: { timeout = atoi(valueof("set_to")); output("rt", 0); }
+
+T_set_active pos: 280,360 :
+    in:  ACTIVE*1
+    out: ACTIVE*1
+    when: set_to
+    do: { timeout = atoi(valueof("set_to")); output("rt", timeout); }
+
+T_set_timing pos: 480,360 :
+    in:  TIMING*1
+    out: TIMING*1
+    when: set_to
+    do: { timeout = atoi(valueof("set_to")); output("rt", timeout - elapsed("TIMING")); }
+
+T_req_idle pos: 80,500 :
+    in:  IDLE*1
+    out: IDLE*1
+    when: req_rt
+    do: { output("rt", 0); }
+
+T_req_active pos: 280,500 :
+    in:  ACTIVE*1
+    out: ACTIVE*1
+    when: req_rt
+    do: { output("rt", timeout); }
+
+T_req_timing pos: 480,500 :
+    in:  TIMING*1
+    out: TIMING*1
+    when: req_rt
+    do: { output("rt", timeout - elapsed("TIMING")); }

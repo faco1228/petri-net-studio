@@ -1,0 +1,49 @@
+# Timer Off 5s - simple version
+# Input in=1 activates output, in=0 starts a 5s timer
+
+Jméno sítě:
+    TOF_PN_5s
+
+Komentář:
+    Timer to off, simple version.
+    Input in=1 activates output, input in=0 starts a 5s countdown.
+    After 5s without in=1 the output turns off.
+
+Vstupy:
+    in
+
+Výstupy:
+    out
+
+Proměnné:
+    int timeout = 5000
+
+Místa (počáteční tokeny, volitelně akce):
+    IDLE   (1) pos: 80,80   : { output("out", 0); }
+    ACTIVE (0) pos: 280,80  : { output("out", 1); }
+    TIMING (0) pos: 480,80  : { }
+
+Přechody a jejich podmínky:
+T_on pos: 180,220 :
+    in:  IDLE*1
+    out: ACTIVE*1
+    when: in [ atoi(valueof("in")) == 1 ]
+    do: { }
+
+T_off_start pos: 380,220 :
+    in:  ACTIVE*1
+    out: TIMING*1
+    when: in [ atoi(valueof("in")) == 0 ]
+    do: { }
+
+T_cancel_off pos: 380,80 :
+    in:  TIMING*1
+    out: ACTIVE*1
+    when: in [ atoi(valueof("in")) == 1 ]
+    do: { }
+
+T_timeout_off pos: 580,220 :
+    in:  TIMING*1
+    out: IDLE*1
+    when: @ timeout
+    do: { }

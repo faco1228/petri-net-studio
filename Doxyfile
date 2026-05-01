@@ -1,0 +1,11 @@
+PROJECT_NAME           = "ICP Petri Net Editor"
+PROJECT_BRIEF          = "Vizuálny editor a runtime monitor interpretovaných Petriho sietí"
+OUTPUT_DIRECTORY       = doc
+INPUT                  = src
+RECURSIVE              = YES
+SOURCE_BROWSER         = YES
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+EXTRACT_ALL            = YES
+HAVE_DOT               = NO
+QUIET                  = YES

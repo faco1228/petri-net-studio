@@ -1,0 +1,50 @@
+# Semaphore with two competing processes and a shared resource
+
+Jméno sítě:
+    semaphore
+
+Komentář:
+    Two processes compete for a single shared resource via a semaphore.
+    acquire grabs the resource, release gives it back.
+    Demonstrates conflict resolution - only one process can hold at a time.
+
+Vstupy:
+    acquire
+    release
+
+Výstupy:
+    granted
+    freed
+
+Proměnné:
+    int holder = 0
+
+Místa (počáteční tokeny, volitelně akce):
+    FREE      (1) pos: 200,80  : { output("freed", 1); }
+    HELD_P1   (0) pos: 80,280  : { output("granted", 1); }
+    HELD_P2   (0) pos: 320,280 : { output("granted", 2); }
+
+Přechody a jejich podmínky:
+T_acquire_p1 pos: 80,180 :
+    in:  FREE*1
+    out: HELD_P1*1
+    when: acquire [ atoi(valueof("acquire")) == 1 ]
+    do: { holder = 1; }
+
+T_acquire_p2 pos: 320,180 :
+    in:  FREE*1
+    out: HELD_P2*1
+    when: acquire [ atoi(valueof("acquire")) == 2 ]
+    do: { holder = 2; }
+
+T_release_p1 pos: 80,380 :
+    in:  HELD_P1*1
+    out: FREE*1
+    when: release [ atoi(valueof("release")) == 1 ]
+    do: { holder = 0; }
+
+T_release_p2 pos: 320,380 :
+    in:  HELD_P2*1
+    out: FREE*1
+    when: release [ atoi(valueof("release")) == 2 ]
+    do: { holder = 0; }
