@@ -19,7 +19,7 @@ struct Variable {
     std::string type;
     std::string name;
     std::string value;
-    std::string comment;  // optional, for readability in the .pn file
+    std::string comment; // optional, for readability in the .pn file
 };
 
 class PnNet
@@ -50,8 +50,7 @@ public:
     Variable* findVariable(const std::string &name);
 
     // Places
-    Place* addPlace(const std::string &name, int initialTokens = 0,
-                    QPointF pos = {0.0, 0.0}, const std::string &action = "");
+    Place* addPlace(const std::string &name, int initialTokens = 0, QPointF pos = {0.0, 0.0}, const std::string &action = "");
     void removePlace(int id);
     Place* findPlaceById(int id);
     const Place* findPlaceById(int id) const;

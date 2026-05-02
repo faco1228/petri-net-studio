@@ -10,9 +10,16 @@
 
 #include <QDialog>
 
+class QSpinBox;
+
 class ArcDialog : public QDialog
 {
     Q_OBJECT
 public:
-    explicit ArcDialog(QWidget *parent = nullptr);
+    explicit ArcDialog(int currentWeight, QWidget *parent = nullptr);
+
+    int weight() const;
+
+private:
+    QSpinBox *m_weightSpin;
 };

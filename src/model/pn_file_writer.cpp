@@ -52,7 +52,7 @@ bool PnFileWriter::save(const PnNet &net, const std::string &path, std::string &
 
     // Variables
     if (!net.getVariables().empty()) {
-        file << "Proměnné:\n";
+        file << "Premenné:\n";
         for (const auto &v : net.getVariables()) {
             file << "    " << v.type << " " << v.name << " = " << v.value;
             if (!v.comment.empty())
@@ -63,7 +63,7 @@ bool PnFileWriter::save(const PnNet &net, const std::string &path, std::string &
     }
 
     // Places
-    file << "Místa (počáteční tokeny, volitelně akce):\n";
+    file << "Miesta (počiatočné tokeny, voliteľne akcie):\n";
     for (const auto &p : net.getPlaces()) {
         file << "    " << p->getName()
              << " (" << p->getInitialTokens() << ")"
@@ -77,7 +77,7 @@ bool PnFileWriter::save(const PnNet &net, const std::string &path, std::string &
     file << "\n";
 
     // Transitions
-    file << "Přechody a jejich podmínky:\n";
+    file << "Prechody a ich podmienky:\n";
     for (const auto &t : net.getTransitions()) {
         file << t->getName()
              << " pos: " << t->getPos().x() << "," << t->getPos().y()

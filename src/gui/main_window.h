@@ -11,9 +11,10 @@
 #include <QMainWindow>
 #include <QTabWidget>
 #include <QDockWidget>
+#include <QActionGroup>
+#include "graphics_editor.h"
 
 class AppController;
-class GraphicsEditor;
 class MonitorPanel;
 class PropertiesPanel;
 class EventLogView;
@@ -39,6 +40,8 @@ private slots:
     void onAbout();
 
     void onTabChanged(int index);
+    void onModeActionTriggered(QAction *action);
+    void onNetLoaded();
 
 private:
     void setupMenuBar();
@@ -47,10 +50,18 @@ private:
     void setupDocks();
     void saveWindowGeometry();
     void restoreWindowGeometry();
+    void updateTitle();
 
     QTabWidget *m_tabs;
     GraphicsEditor *m_editor;
     MonitorPanel *m_monitorPanel;
+
+    // Editor mode toolbar actions (exclusive group)
+    QActionGroup *m_modeGroup;
+    QAction *m_actSelect;
+    QAction *m_actAddPlace;
+    QAction *m_actAddTransition;
+    QAction *m_actAddArc;
 
     // Properties dock on the right side
     QDockWidget *m_propertiesDock;

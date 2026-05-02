@@ -9,10 +9,21 @@
 #pragma once
 
 #include <QDialog>
+#include <QString>
+
+class QLineEdit;
+class QTextEdit;
 
 class NewNetDialog : public QDialog
 {
     Q_OBJECT
 public:
     explicit NewNetDialog(QWidget *parent = nullptr);
+
+    QString netName()    const;
+    QString netComment() const;
+
+private:
+    QLineEdit *m_nameEdit;
+    QTextEdit *m_commentEdit;
 };

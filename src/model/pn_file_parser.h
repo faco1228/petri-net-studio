@@ -36,7 +36,7 @@ private:
 
     // Low-level helpers
     std::string currentLine() const;
-    bool advance();           // move to next non-empty, non-comment line
+    bool advance(); // move to next non-empty, non-comment line
     bool atEnd() const;
     std::string stripComment(const std::string &line) const;
     std::string trim(const std::string &s) const;

@@ -8,8 +8,7 @@
 
 #include "pn_place.h"
 
-Place::Place(int id, const std::string &name, int initialTokens,
-             QPointF pos, const std::string &action)
+Place::Place(int id, const std::string &name, int initialTokens, QPointF pos, const std::string &action)
     : m_id(id)
     , m_name(name)
     , m_initialTokens(initialTokens)

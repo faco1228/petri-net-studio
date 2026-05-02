@@ -1064,3 +1064,66 @@ make run
 ---
 
 *Dokument vygenerovaný ako projektová roadmapa pre dvojicu. Aktualizovať podľa potreby počas vývoja.*
+
+---
+
+## 10. Checklist — stav implementácie
+
+### Model (src/model/)
+- [x] `Place` — meno, tokeny, akcia, pozícia, ID
+- [x] `Transition` — meno, event, guard, delay, akcia, pozícia, ID
+- [x] `Arc` — typ (INPUT/OUTPUT), váha, waypoints, ID
+- [x] `PnNet` — agregát, ID countery, add/remove/find metódy
+- [x] `PnFileParser` — načítanie .pn súboru (všetky sekcie)
+- [x] `PnFileWriter` — serializácia PnNet do .pn súboru
+- [ ] Parser — otestovať round-trip na tof_pn_5s.pn a tof_pn.pn
+
+### GUI — Editor (src/gui/)
+- [x] `MainWindow` — menu, toolbar, QTabWidget, docks (Properties, EventLog)
+- [x] `AppController` — net(), addPlace/Transition/Arc, removeX, updateItemPos, load/save
+- [x] `GraphicsEditor` — QGraphicsView, módy (Select/AddPlace/AddTransition/AddArc)
+- [x] `GraphicsPlaceItem` — kruh, meno, počet tokenov, drag, monitor highlight, boundingRect
+- [x] `GraphicsTransitionItem` — obdĺžnik, meno, drag, enabled/pending farby, boundingRect
+- [x] `GraphicsArcItem` — šipka, váha, arrowhead, updateGeometry()
+- [x] `GraphicsEditor` — napojiť toolbar v MainWindow na setMode() (modeChanged signal)
+- [ ] `onOpenNet` / `onSaveNet` / `onSaveNetAs` — zapojiť PnFileParser/Writer cez AppController
+- [ ] `onNewNet` — NewNetDialog + vyčistiť scénu
+- [ ] `PropertiesPanel` — editácia vlastností vybraného Place/Transition
+- [ ] `PlaceDialog` — dialóg (meno, tokeny, akcia)
+- [ ] `TransitionDialog` — dialóg (meno, event, guard, delay, akcia)
+- [ ] `ArcDialog` — dialóg (váha)
+- [ ] `VariablesDialog` — dialóg (vstupy, výstupy, premenné)
+- [ ] `NewNetDialog` — dialóg (meno, komentár)
+
+### GUI — Monitor (src/gui/)
+- [ ] `MonitorPanel` — live marking, enabled/pending prechody
+- [ ] `InjectPanel` — injektovanie vstupov cez UDP
+- [ ] `EventLogView` — scrollovací log udalostí
+- [ ] `MonitorAdapter` — parsovanie STATE/LOG správ → Qt signály
+
+### Sieť (src/network/)
+- [ ] `UdpClient` — QUdpSocket, send INPUT/QUIT, receive STATE/LOG
+- [ ] `UdpServer` — POSIX socket v interpreti (vlákno)
+
+### Engine (src/engine/)
+- [ ] `PetriNetEngine` — marking, isEnabled(), fireMaximalSet(), event loop
+- [ ] `TimerManager` — priority_queue, schedule/cancel, popExpired()
+- [ ] `ScriptRuntime` — valueof(), defined(), output(), tokens(), elapsed(), now()
+
+### Generátor kódu (src/codegen/)
+- [ ] `CodeGenerator` — generuje net_NAME.cpp z PnNet
+- [ ] Šablóna `interpreter_main.cpp.tpl`
+- [ ] Šablóna `runtime_header.h.tpl`
+- [ ] Makefile pre generovaný interpret
+
+### Build a dokumentácia
+- [x] `make` — projekt sa prekladá
+- [x] `make run` — aplikácia sa spustí a zobrazí okno
+- [ ] `make doxygen` — generuje HTML dokumentáciu
+- [ ] `make pack` — vytvorí archív pre odovzdanie
+- [ ] `README.txt` — doplniť po implementácii
+
+### Testovanie
+- [ ] Round-trip test: load tof_pn_5s.pn → save → load znova → porovnať
+- [ ] End-to-end: nakresliť sieť → generate → run → inject in=1 → monitor
+- [ ] Preklad na serveri merlin (Qt 5.5.1)

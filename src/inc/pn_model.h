@@ -18,10 +18,10 @@ class Arc;
 class PnNet;
 
 using TokenCount = int;
-using ArcWeight  = int;
-using Marking    = std::map<std::string, TokenCount>;
+using ArcWeight = int;
+using Marking = std::map<std::string, TokenCount>;
 
 enum class ArcType {
-    INPUT,   // place -> transition
-    OUTPUT   // transition -> place
+    INPUT, // place -> transition
+    OUTPUT // transition -> place
 };

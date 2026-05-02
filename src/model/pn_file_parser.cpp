@@ -45,39 +45,42 @@ std::unique_ptr<PnNet> PnFileParser::parse(const std::string &path, std::string 
 
     m_lineIdx = 0;
 
-    // Sections must appear in order but are otherwise flexible
+    // Sections must appear in order but are otherwise flexible.
+    // Each section lists alternative header prefixes (Czech and Slovak variants).
     struct Section {
-        std::string header;
+        std::vector<std::string> headers; // accepted alternatives
         bool (PnFileParser::*parser)(std::string &);
         bool required;
     };
 
     std::vector<Section> sections = {
-        { "Jméno sítě:",                          &PnFileParser::parseName,        true  },
-        { "Komentář:",                             &PnFileParser::parseComment,     false },
-        { "Vstupy:",                               &PnFileParser::parseInputs,      false },
-        { "Výstupy:",                              &PnFileParser::parseOutputs,     false },
-        { "Proměnné:",                             &PnFileParser::parseVariables,   false },
-        { "Místa",                                 &PnFileParser::parsePlaces,      true  },
-        { "Přechody",                              &PnFileParser::parseTransitions, true  },
+        { {"Jméno sítě:", "Meno siete:"},   &PnFileParser::parseName,       true  },
+        { {"Komentář:",   "Komentár:"},      &PnFileParser::parseComment,    false },
+        { {"Vstupy:"},                        &PnFileParser::parseInputs,     false },
+        { {"Výstupy:"},                       &PnFileParser::parseOutputs,    false },
+        { {"Proměnné:",   "Premenné:"},      &PnFileParser::parseVariables,  false },
+        { {"Místa",       "Miesta"},          &PnFileParser::parsePlaces,     true  },
+        { {"Přechody",    "Prechody"},        &PnFileParser::parseTransitions,true  },
     };
 
     for (auto &sec : sections) {
-        // Seek to the section header
+        // Seek to a line that starts with any of the accepted headers
         bool found = false;
         while (!atEnd()) {
             std::string stripped = trim(stripComment(currentLine()));
-            if (stripped.find(sec.header) == 0) {
-                found = true;
-                advance();
-                break;
+            for (const auto &hdr : sec.headers) {
+                if (stripped.find(hdr) == 0) {
+                    found = true;
+                    break;
+                }
             }
+            if (found) { advance(); break; }
             advance();
         }
 
         if (!found) {
             if (sec.required) {
-                errorMsg = "Missing required section: " + sec.header;
+                errorMsg = "Missing required section: " + sec.headers[0];
                 return nullptr;
             }
             continue;
@@ -186,8 +189,8 @@ bool PnFileParser::parseVariables(std::string &/*errorMsg*/)
         if (space == std::string::npos) { advance(); continue; }
 
         Variable v;
-        v.type  = trim(lhs.substr(0, space));
-        v.name  = trim(lhs.substr(space + 1));
+        v.type = trim(lhs.substr(0, space));
+        v.name = trim(lhs.substr(space + 1));
         v.value = rhs;
         m_net->addVariable(v);
         advance();
@@ -208,8 +211,8 @@ bool PnFileParser::parsePlaces(std::string &errorMsg)
 
         if (line.empty()) { advance(); continue; }
 
-        // Stop at transitions section
-        if (line.find("Přechody") == 0)
+        // Stop at transitions section (Czech or Slovak header)
+        if (line.find("Přechody") == 0 || line.find("Prechody") == 0)
             break;
 
         std::smatch m;
@@ -218,9 +221,9 @@ bool PnFileParser::parsePlaces(std::string &errorMsg)
             continue;
         }
 
-        std::string name   = m[1];
-        int tokens         = std::stoi(m[2]);
-        std::string rest   = trim(m[3].str());
+        std::string name = m[1];
+        int tokens = std::stoi(m[2]);
+        std::string rest = trim(m[3].str());
 
         double px = -1, py = -1;
         std::string action;
@@ -293,13 +296,17 @@ bool PnFileParser::parseTransitions(std::string &errorMsg)
         advance();
 
         // Read sub-lines: in, out, when, do
+        // Use raw content of CURRENT line (not stale outer `raw`) to detect
+        // when we've left the indented block and hit the next transition header.
         while (!atEnd()) {
-            std::string sub = trim(stripComment(currentLine()));
-            if (sub.empty()) { advance(); break; }
+            std::string rawSub = currentLine();
+            std::string sub    = trim(stripComment(rawSub));
 
-            // Stop if we hit next transition header (unindented word + ':')
-            if (raw.front() != ' ' && raw.front() != '\t'
-                && sub.back() == ':' && sub.find(' ') == std::string::npos)
+            // Empty line means end of this transition's block
+            if (sub.empty()) { ++m_lineIdx; break; }
+
+            // Unindented line = next transition header or section header
+            if (!rawSub.empty() && rawSub[0] != ' ' && rawSub[0] != '\t')
                 break;
 
             if (sub.find("in:") == 0) {
@@ -332,16 +339,13 @@ bool PnFileParser::parseTransitions(std::string &errorMsg)
                 // Extract event name (identifier before '[' or '@')
                 std::string event, guard, delay;
                 size_t i = 0;
-                // Skip leading whitespace
                 while (i < cond.size() && cond[i] == ' ') ++i;
 
-                // Event name: identifier before '[' or '@' or end
                 size_t start = i;
                 while (i < cond.size() && cond[i] != '[' && cond[i] != '@' && cond[i] != ' ')
                     ++i;
                 event = trim(cond.substr(start, i - start));
 
-                // Guard: content of [ ... ]
                 size_t lb = cond.find('[');
                 if (lb != std::string::npos) {
                     size_t rb = cond.rfind(']');
@@ -349,7 +353,6 @@ bool PnFileParser::parseTransitions(std::string &errorMsg)
                         guard = trim(cond.substr(lb + 1, rb - lb - 1));
                 }
 
-                // Delay: value after '@'
                 size_t at = cond.find('@');
                 if (at != std::string::npos)
                     delay = trim(cond.substr(at + 1));

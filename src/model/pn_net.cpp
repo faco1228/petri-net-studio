@@ -70,23 +70,15 @@ Variable* PnNet::findVariable(const std::string &name) {
 
 // Places
 
-Place* PnNet::addPlace(const std::string &name, int initialTokens,
-                       QPointF pos, const std::string &action)
-{
+Place* PnNet::addPlace(const std::string &name, int initialTokens, QPointF pos, const std::string &action) {
     m_places.push_back(std::make_unique<Place>(m_nextPlaceId++, name, initialTokens, pos, action));
     return m_places.back().get();
 }
 
 void PnNet::removePlace(int id) {
-    m_places.erase(
-        std::remove_if(m_places.begin(), m_places.end(),
-                       [id](const std::unique_ptr<Place> &p) { return p->getId() == id; }),
-        m_places.end());
+    m_places.erase(std::remove_if(m_places.begin(), m_places.end(), [id](const std::unique_ptr<Place> &p) { return p->getId() == id; }), m_places.end());
     // Also remove arcs connected to this place
-    m_arcs.erase(
-        std::remove_if(m_arcs.begin(), m_arcs.end(),
-                       [id](const std::unique_ptr<Arc> &a) { return a->getPlaceId() == id; }),
-        m_arcs.end());
+    m_arcs.erase(std::remove_if(m_arcs.begin(), m_arcs.end(), [id](const std::unique_ptr<Arc> &a) { return a->getPlaceId() == id; }), m_arcs.end());
 }
 
 Place* PnNet::findPlaceById(int id) {
@@ -123,14 +115,8 @@ Transition* PnNet::addTransition(const std::string &name, QPointF pos) {
 }
 
 void PnNet::removeTransition(int id) {
-    m_transitions.erase(
-        std::remove_if(m_transitions.begin(), m_transitions.end(),
-                       [id](const std::unique_ptr<Transition> &t) { return t->getId() == id; }),
-        m_transitions.end());
-    m_arcs.erase(
-        std::remove_if(m_arcs.begin(), m_arcs.end(),
-                       [id](const std::unique_ptr<Arc> &a) { return a->getTransitionId() == id; }),
-        m_arcs.end());
+    m_transitions.erase(std::remove_if(m_transitions.begin(), m_transitions.end(), [id](const std::unique_ptr<Transition> &t) { return t->getId() == id; }), m_transitions.end());
+    m_arcs.erase(std::remove_if(m_arcs.begin(), m_arcs.end(), [id](const std::unique_ptr<Arc> &a) { return a->getTransitionId() == id; }), m_arcs.end());
 }
 
 Transition* PnNet::findTransitionById(int id) {
@@ -167,10 +153,7 @@ Arc* PnNet::addArc(ArcType type, int placeId, int transitionId, int weight) {
 }
 
 void PnNet::removeArc(int id) {
-    m_arcs.erase(
-        std::remove_if(m_arcs.begin(), m_arcs.end(),
-                       [id](const std::unique_ptr<Arc> &a) { return a->getId() == id; }),
-        m_arcs.end());
+    m_arcs.erase(std::remove_if(m_arcs.begin(), m_arcs.end(), [id](const std::unique_ptr<Arc> &a) { return a->getId() == id; }), m_arcs.end());
 }
 
 Arc* PnNet::findArcById(int id) {

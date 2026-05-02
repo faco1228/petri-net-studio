@@ -58,4 +58,4 @@ HEADERS += \
     gui/dialogs/arc_dialog.h \
     gui/dialogs/variables_dialog.h
 
-INCLUDEPATH += . inc model engine codegen network gui
+INCLUDEPATH += . inc model engine codegen network gui gui/dialogs

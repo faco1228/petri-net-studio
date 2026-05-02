@@ -14,8 +14,7 @@
 class Place
 {
 public:
-    Place(int id, const std::string &name, int initialTokens = 0,
-          QPointF pos = {0.0, 0.0}, const std::string &action = "");
+    Place(int id, const std::string &name, int initialTokens = 0, QPointF pos = {0.0, 0.0}, const std::string &action = "");
 
     int getId() const;
 
