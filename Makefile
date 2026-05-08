@@ -1,17 +1,20 @@
 # Makefile — top level
-# Autori: xfacka00, xlogin02
+# Autori: xfackas00, xhanzea00
 
-LOGIN1 = xfacka00
-LOGIN2 = xlogin02
+LOGIN1 = xfackas00
+LOGIN2 = xhanzea00
 ARCHIVE = $(LOGIN1)-$(LOGIN2).zip
+
+# Detect qmake binary (qmake6 on newer distros, qmake on older / macOS)
+QMAKE = $(shell which qmake6 2>/dev/null || which qmake 2>/dev/null || echo qmake)
 
 .PHONY: all run test doxygen clean pack
 
 all:
-	$(MAKE) -C src all
+	cd src && $(QMAKE) icp_project.pro && $(MAKE)
 
 run: all
-	open ./src/icp_petri.app
+	./src/icp_petri.app/Contents/MacOS/icp_petri 2>/dev/null || ./src/icp_petri
 
 test:
 	cd tests && g++ -std=c++17 \
@@ -23,14 +26,17 @@ test:
 	    ../src/model/pn_arc.cpp \
 	    ../src/model/pn_file_parser.cpp \
 	    ../src/model/pn_file_writer.cpp \
-	    $$(pkg-config --cflags --libs Qt6Core 2>/dev/null || echo "-I/opt/homebrew/lib/QtCore.framework/Headers -F/opt/homebrew/lib -framework QtCore") \
+	    $$(pkg-config --cflags --libs Qt6Core 2>/dev/null || \
+	       pkg-config --cflags --libs Qt5Core 2>/dev/null || \
+	       echo "") \
 	    -o test_roundtrip && ./test_roundtrip
 
 doxygen:
 	doxygen Doxyfile
 
 clean:
-	$(MAKE) -C src clean
+	-$(MAKE) -C src clean 2>/dev/null || true
+	rm -rf src/Makefile src/*.o
 	rm -rf doc/html doc/latex
 	rm -rf generated/*.cpp generated/interpreter_*
 	rm -f $(ARCHIVE)
@@ -41,7 +47,8 @@ pack: clean
 	    README.txt \
 	    Doxyfile \
 	    src/ \
+	    doc/ \
 	    examples/ \
-	    design.pdf
+	    tests/
 	@echo "Archív vytvorený: $(ARCHIVE)"
 	@echo "Veľkosť: $$(du -sh $(ARCHIVE))"

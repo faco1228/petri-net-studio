@@ -1,29 +1,53 @@
 /**
  * @file pn_arc.cpp
+ * @author Samuel Fačka (xfackas00)
+ * @author Arťom Hanzel (xhanzea00)
  * @brief Implementation of the Arc class.
- * @author xfacka00 (xfacka00@stud.fit.vutbr.cz)
- * @author xlogin02 (xlogin02@stud.fit.vutbr.cz)
+ * @version 0.1
  * @date 2026-04
+ *
+ * @copyright Copyright (c) 2026
+ *
+ * What happens here:
+ *   1. Initialises all Arc members via the constructor initializer list
+ *   2. Provides trivial accessor and mutator implementations
  */
 
 #include "pn_arc.h"
 
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief Constructs an Arc and initialises all fields. */
 Arc::Arc(int id, ArcType type, int placeId, int transitionId, int weight)
-    : m_id(id)
-    , m_type(type)
-    , m_placeId(placeId)
-    , m_transitionId(transitionId)
-    , m_weight(weight)
+    : id_(id)
+    , type_(type)
+    , place_id_(placeId)
+    , transition_id_(transitionId)
+    , weight_(weight)
 {}
 
-int Arc::getId() const { return m_id; }
-ArcType Arc::getType() const { return m_type; }
+///////////////////////////////////////////////////////////////////////////////
 
-int Arc::getPlaceId() const { return m_placeId; }
-int Arc::getTransitionId() const { return m_transitionId; }
+/** @brief Returns the unique arc ID. */
+int Arc::id() const { return id_; }
 
-int Arc::getWeight() const { return m_weight; }
-void Arc::setWeight(int weight) { m_weight = weight; }
+/** @brief Returns the arc direction (INPUT or OUTPUT). */
+ArcType Arc::type() const { return type_; }
 
-const std::vector<QPointF>& Arc::getWaypoints() const { return m_waypoints; }
-void Arc::setWaypoints(const std::vector<QPointF> &points) { m_waypoints = points; }
+/** @brief Returns the ID of the connected place. */
+int Arc::place_id() const { return place_id_; }
+
+/** @brief Returns the ID of the connected transition. */
+int Arc::transition_id() const { return transition_id_; }
+
+/** @brief Returns the arc weight. */
+int Arc::weight() const { return weight_; }
+
+/** @brief Sets the arc weight. */
+void Arc::set_weight(int weight) { weight_ = weight; }
+
+/** @brief Returns the intermediate waypoints (empty = straight line). */
+const std::vector<QPointF>& Arc::waypoints() const { return waypoints_; }
+
+/** @brief Sets the intermediate waypoints. */
+void Arc::set_waypoints(const std::vector<QPointF> &points) { waypoints_ = points; }

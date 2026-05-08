@@ -1,9 +1,19 @@
 /**
  * @file pn_file_writer.cpp
+ * @author Samuel Fačka (xfackas00)
+ * @author Arťom Hanzel (xhanzea00)
  * @brief Implementation of PnFileWriter.
- * @author xfacka00 (xfacka00@stud.fit.vutbr.cz)
- * @author xlogin02 (xlogin02@stud.fit.vutbr.cz)
+ * @version 0.1
  * @date 2026-04
+ *
+ * @copyright Copyright (c) 2026
+ *
+ * What happens here:
+ *   1. Opens the output file for writing
+ *   2. Writes each .pn section in the order expected by PnFileParser:
+ *      Name, Comment, Inputs, Outputs, Variables, Places, Transitions
+ *   3. Each place stores its canvas position (pos: x,y) for exact round-trip fidelity
+ *   4. Each transition stores in:/out: arc lists and the full when:/do: condition
  */
 
 #include "pn_file_writer.h"
@@ -11,6 +21,9 @@
 #include <fstream>
 #include <sstream>
 
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief Writes all sections of net to the file at path. */
 bool PnFileWriter::save(const PnNet &net, const std::string &path, std::string &errorMsg)
 {
     std::ofstream file(path);
@@ -19,41 +32,41 @@ bool PnFileWriter::save(const PnNet &net, const std::string &path, std::string &
         return false;
     }
 
-    // Name
+    // ---- Name section ----
     file << "Jméno sítě:\n";
-    file << "    " << net.getName() << "\n\n";
+    file << "    " << net.name() << "\n\n";
 
-    // Comment
-    if (!net.getComment().empty()) {
+    // ---- Comment section (optional) ----
+    if (!net.comment().empty()) {
         file << "Komentář:\n";
-        // Indent each line of the comment
-        std::istringstream ss(net.getComment());
+        // Indent every line of the multi-line comment
+        std::istringstream ss(net.comment());
         std::string line;
         while (std::getline(ss, line))
             file << "    " << line << "\n";
         file << "\n";
     }
 
-    // Inputs
-    if (!net.getInputs().empty()) {
+    // ---- Inputs section (optional) ----
+    if (!net.inputs().empty()) {
         file << "Vstupy:\n";
-        for (const auto &in : net.getInputs())
+        for (const auto &in : net.inputs())
             file << "    " << in << "\n";
         file << "\n";
     }
 
-    // Outputs
-    if (!net.getOutputs().empty()) {
+    // ---- Outputs section (optional) ----
+    if (!net.outputs().empty()) {
         file << "Výstupy:\n";
-        for (const auto &out : net.getOutputs())
+        for (const auto &out : net.outputs())
             file << "    " << out << "\n";
         file << "\n";
     }
 
-    // Variables
-    if (!net.getVariables().empty()) {
+    // ---- Variables section (optional) ----
+    if (!net.variables().empty()) {
         file << "Premenné:\n";
-        for (const auto &v : net.getVariables()) {
+        for (const auto &v : net.variables()) {
             file << "    " << v.type << " " << v.name << " = " << v.value;
             if (!v.comment.empty())
                 file << "  # " << v.comment;
@@ -62,35 +75,37 @@ bool PnFileWriter::save(const PnNet &net, const std::string &path, std::string &
         file << "\n";
     }
 
-    // Places
+    // ---- Places section ----
     file << "Miesta (počiatočné tokeny, voliteľne akcie):\n";
-    for (const auto &p : net.getPlaces()) {
-        file << "    " << p->getName()
-             << " (" << p->getInitialTokens() << ")"
-             << " pos: " << p->getPos().x() << "," << p->getPos().y();
+    for (const auto &p : net.places()) {
+        // Write place with canvas position for round-trip fidelity
+        file << "    " << p->name()
+             << " (" << p->initial_tokens() << ")"
+             << " pos: " << p->pos().x() << "," << p->pos().y();
 
-        if (!p->getAction().empty())
-            file << " : { " << p->getAction() << " }";
+        if (!p->action().empty())
+            file << " : { " << p->action() << " }";
 
         file << "\n";
     }
     file << "\n";
 
-    // Transitions
+    // ---- Transitions section ----
     file << "Prechody a ich podmienky:\n";
-    for (const auto &t : net.getTransitions()) {
-        file << t->getName()
-             << " pos: " << t->getPos().x() << "," << t->getPos().y()
+    for (const auto &t : net.transitions()) {
+        file << t->name()
+             << " pos: " << t->pos().x() << "," << t->pos().y()
              << " :\n";
 
-        // Input arcs
-        auto arcs = net.getArcsForTransition(t->getId());
+        // Collect input and output arc strings for this transition
+        auto arcs = net.arcs_for_transition(t->id());
         std::string inArcs, outArcs;
         for (Arc *a : arcs) {
-            const Place *p = net.findPlaceById(a->getPlaceId());
+            const Place *p = net.find_place_by_id(a->place_id());
             if (!p) continue;
-            std::string entry = p->getName() + "*" + std::to_string(a->getWeight());
-            if (a->getType() == ArcType::INPUT)
+            // Format as "PlaceName*weight"
+            std::string entry = p->name() + "*" + std::to_string(a->weight());
+            if (a->type() == ArcType::INPUT)
                 inArcs  += (inArcs.empty()  ? "" : ", ") + entry;
             else
                 outArcs += (outArcs.empty() ? "" : ", ") + entry;
@@ -99,15 +114,15 @@ bool PnFileWriter::save(const PnNet &net, const std::string &path, std::string &
         file << "    in:  " << inArcs  << "\n";
         file << "    out: " << outArcs << "\n";
 
-        // Firing condition
+        // Build the "when:" clause from the three firing-condition fields
         std::string when;
-        if (!t->getEventName().empty()) when += t->getEventName();
-        if (!t->getGuard().empty())     when += " [ " + t->getGuard() + " ]";
-        if (!t->getDelayExpr().empty()) when += " @ " + t->getDelayExpr();
+        if (!t->event_name().empty()) when += t->event_name();
+        if (!t->guard().empty())      when += " [ " + t->guard() + " ]";
+        if (!t->delay_expr().empty()) when += " @ " + t->delay_expr();
         file << "    when: " << when << "\n";
 
-        // Action
-        file << "    do: { " << t->getAction() << " }\n";
+        // Write the action block (always present, even if empty)
+        file << "    do: { " << t->action() << " }\n";
         file << "\n";
     }
 

@@ -1,9 +1,17 @@
 /**
  * @file new_net_dialog.cpp
- * @brief Implementation of NewNetDialog.
- * @author xfacka00 (xfacka00@stud.fit.vutbr.cz)
- * @author xlogin02 (xlogin02@stud.fit.vutbr.cz)
+ * @author Samuel Fačka (xfackas00)
+ * @author Arťom Hanzel (xhanzea00)
+ * @brief NewNetDialog implementation.
+ * @version 0.1
  * @date 2026-04
+ *
+ * @copyright Copyright (c) 2026
+ *
+ * What happens here:
+ *   1. Constructor builds a QFormLayout with a name QLineEdit and a comment QTextEdit
+ *   2. Standard Ok/Cancel QDialogButtonBox is wired to accept/reject
+ *   3. netName() / netComment() trim and return the widget text
  */
 
 #include "new_net_dialog.h"
@@ -14,6 +22,11 @@
 #include <QLineEdit>
 #include <QTextEdit>
 
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief constructs the dialog with empty fields
+ */
 NewNetDialog::NewNetDialog(QWidget *parent)
     : QDialog(parent)
     , m_nameEdit(new QLineEdit(this))
@@ -40,5 +53,10 @@ NewNetDialog::NewNetDialog(QWidget *parent)
     layout->addWidget(buttons);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief returns the trimmed net name */
 QString NewNetDialog::netName()    const { return m_nameEdit->text().trimmed(); }
+
+/** @brief returns the trimmed comment (may be empty) */
 QString NewNetDialog::netComment() const { return m_commentEdit->toPlainText().trimmed(); }

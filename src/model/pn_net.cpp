@@ -1,195 +1,262 @@
 /**
  * @file pn_net.cpp
+ * @author Samuel Fačka (xfackas00)
+ * @author Arťom Hanzel (xhanzea00)
  * @brief Implementation of the PnNet class.
- * @author xfacka00 (xfacka00@stud.fit.vutbr.cz)
- * @author xlogin02 (xlogin02@stud.fit.vutbr.cz)
+ * @version 0.1
  * @date 2026-04
+ *
+ * @copyright Copyright (c) 2026
+ *
+ * What happens here:
+ *   1. Manages three owned collections of Place, Transition and Arc objects
+ *   2. Assigns monotonically increasing IDs via next_*_id_ counters
+ *   3. Cascade-deletes connected arcs when a place or transition is removed
  */
 
 #include "pn_net.h"
 #include <algorithm>
 
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief Constructs an empty net with all ID counters starting at 1. */
 PnNet::PnNet()
-    : m_nextPlaceId(1)
-    , m_nextTransitionId(1)
-    , m_nextArcId(1)
+    : next_place_id_(1)
+    , next_transition_id_(1)
+    , next_arc_id_(1)
 {}
 
-const std::string& PnNet::getName() const { return m_name; }
-void PnNet::setName(const std::string &name) { m_name = name; }
+///////////////////////////////////////////////////////////////////////////////
+// Net metadata
 
-const std::string& PnNet::getComment() const { return m_comment; }
-void PnNet::setComment(const std::string &comment) { m_comment = comment; }
+/** @brief Returns the net name. */
+const std::string& PnNet::name() const { return name_; }
 
+/** @brief Sets the net name. */
+void PnNet::set_name(const std::string &name) { name_ = name; }
+
+/** @brief Returns the net comment. */
+const std::string& PnNet::comment() const { return comment_; }
+
+/** @brief Sets the net comment. */
+void PnNet::set_comment(const std::string &comment) { comment_ = comment; }
+
+///////////////////////////////////////////////////////////////////////////////
 // Inputs
 
-const std::vector<std::string>& PnNet::getInputs() const { return m_inputs; }
+/** @brief Returns the declared input names. */
+const std::vector<std::string>& PnNet::inputs() const { return inputs_; }
 
-void PnNet::addInput(const std::string &name) {
-    if (std::find(m_inputs.begin(), m_inputs.end(), name) == m_inputs.end())
-        m_inputs.push_back(name);
+/** @brief Adds an input name, ignoring duplicates. */
+void PnNet::add_input(const std::string &name) {
+    // Only insert if not already present
+    if (std::find(inputs_.begin(), inputs_.end(), name) == inputs_.end())
+        inputs_.push_back(name);
 }
 
-void PnNet::removeInput(const std::string &name) {
-    m_inputs.erase(std::remove(m_inputs.begin(), m_inputs.end(), name), m_inputs.end());
+/** @brief Removes an input name (no-op if absent). */
+void PnNet::remove_input(const std::string &name) {
+    inputs_.erase(std::remove(inputs_.begin(), inputs_.end(), name), inputs_.end());
 }
 
+///////////////////////////////////////////////////////////////////////////////
 // Outputs
 
-const std::vector<std::string>& PnNet::getOutputs() const { return m_outputs; }
+/** @brief Returns the declared output names. */
+const std::vector<std::string>& PnNet::outputs() const { return outputs_; }
 
-void PnNet::addOutput(const std::string &name) {
-    if (std::find(m_outputs.begin(), m_outputs.end(), name) == m_outputs.end())
-        m_outputs.push_back(name);
+/** @brief Adds an output name, ignoring duplicates. */
+void PnNet::add_output(const std::string &name) {
+    if (std::find(outputs_.begin(), outputs_.end(), name) == outputs_.end())
+        outputs_.push_back(name);
 }
 
-void PnNet::removeOutput(const std::string &name) {
-    m_outputs.erase(std::remove(m_outputs.begin(), m_outputs.end(), name), m_outputs.end());
+/** @brief Removes an output name (no-op if absent). */
+void PnNet::remove_output(const std::string &name) {
+    outputs_.erase(std::remove(outputs_.begin(), outputs_.end(), name), outputs_.end());
 }
 
+///////////////////////////////////////////////////////////////////////////////
 // Variables
 
-const std::vector<Variable>& PnNet::getVariables() const { return m_variables; }
+/** @brief Returns the list of embedded C++ variables. */
+const std::vector<Variable>& PnNet::variables() const { return variables_; }
 
-void PnNet::addVariable(const Variable &var) {
-    m_variables.push_back(var);
+/** @brief Appends a variable, ignoring duplicates (same name already present). */
+void PnNet::add_variable(const Variable &var) {
+    for (const auto &v : variables_)
+        if (v.name == var.name) return; // skip duplicate
+    variables_.push_back(var);
 }
 
-void PnNet::removeVariable(const std::string &name) {
-    m_variables.erase(
-        std::remove_if(m_variables.begin(), m_variables.end(),
+/** @brief Removes the variable with the given name. */
+void PnNet::remove_variable(const std::string &name) {
+    variables_.erase(
+        std::remove_if(variables_.begin(), variables_.end(),
                        [&](const Variable &v) { return v.name == name; }),
-        m_variables.end());
+        variables_.end());
 }
 
-Variable* PnNet::findVariable(const std::string &name) {
-    for (auto &v : m_variables)
+/** @brief Finds a variable by name and returns a mutable pointer (nullptr if absent). */
+Variable* PnNet::find_variable(const std::string &name) {
+    for (auto &v : variables_)
         if (v.name == name) return &v;
     return nullptr;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 // Places
 
-Place* PnNet::addPlace(const std::string &name, int initialTokens, QPointF pos, const std::string &action) {
-    m_places.push_back(std::make_unique<Place>(m_nextPlaceId++, name, initialTokens, pos, action));
-    return m_places.back().get();
+/** @brief Creates a place with an auto-assigned ID and appends it to the collection. */
+Place* PnNet::add_place(const std::string &name, int initialTokens, QPointF pos, const std::string &action) {
+    places_.push_back(std::make_unique<Place>(next_place_id_++, name, initialTokens, pos, action));
+    return places_.back().get();
 }
 
-void PnNet::removePlace(int id) {
-    m_places.erase(std::remove_if(m_places.begin(), m_places.end(), [id](const std::unique_ptr<Place> &p) { return p->getId() == id; }), m_places.end());
-    // Also remove arcs connected to this place
-    m_arcs.erase(std::remove_if(m_arcs.begin(), m_arcs.end(), [id](const std::unique_ptr<Arc> &a) { return a->getPlaceId() == id; }), m_arcs.end());
+/** @brief Removes a place and cascade-deletes all arcs connected to it. */
+void PnNet::remove_place(int id) {
+    // Remove the place itself
+    places_.erase(std::remove_if(places_.begin(), places_.end(),
+        [id](const std::unique_ptr<Place> &p) { return p->id() == id; }), places_.end());
+    // Also remove any arc that referenced this place
+    arcs_.erase(std::remove_if(arcs_.begin(), arcs_.end(),
+        [id](const std::unique_ptr<Arc> &a) { return a->place_id() == id; }), arcs_.end());
 }
 
-Place* PnNet::findPlaceById(int id) {
-    for (auto &p : m_places)
-        if (p->getId() == id) return p.get();
+/** @brief Finds a place by ID (mutable version). */
+Place* PnNet::find_place_by_id(int id) {
+    for (auto &p : places_)
+        if (p->id() == id) return p.get();
     return nullptr;
 }
 
-Place* PnNet::findPlaceByName(const std::string &name) {
-    for (auto &p : m_places)
-        if (p->getName() == name) return p.get();
+/** @brief Finds a place by name (mutable version). */
+Place* PnNet::find_place_by_name(const std::string &name) {
+    for (auto &p : places_)
+        if (p->name() == name) return p.get();
     return nullptr;
 }
 
-const Place* PnNet::findPlaceById(int id) const {
-    for (const auto &p : m_places)
-        if (p->getId() == id) return p.get();
+/** @brief Finds a place by ID (const version). */
+const Place* PnNet::find_place_by_id(int id) const {
+    for (const auto &p : places_)
+        if (p->id() == id) return p.get();
     return nullptr;
 }
 
-const Place* PnNet::findPlaceByName(const std::string &name) const {
-    for (const auto &p : m_places)
-        if (p->getName() == name) return p.get();
+/** @brief Finds a place by name (const version). */
+const Place* PnNet::find_place_by_name(const std::string &name) const {
+    for (const auto &p : places_)
+        if (p->name() == name) return p.get();
     return nullptr;
 }
 
-const std::vector<std::unique_ptr<Place>>& PnNet::getPlaces() const { return m_places; }
+/** @brief Returns the full place collection. */
+const std::vector<std::unique_ptr<Place>>& PnNet::places() const { return places_; }
 
+///////////////////////////////////////////////////////////////////////////////
 // Transitions
 
-Transition* PnNet::addTransition(const std::string &name, QPointF pos) {
-    m_transitions.push_back(std::make_unique<Transition>(m_nextTransitionId++, name, pos));
-    return m_transitions.back().get();
+/** @brief Creates a transition with an auto-assigned ID. */
+Transition* PnNet::add_transition(const std::string &name, QPointF pos) {
+    transitions_.push_back(std::make_unique<Transition>(next_transition_id_++, name, pos));
+    return transitions_.back().get();
 }
 
-void PnNet::removeTransition(int id) {
-    m_transitions.erase(std::remove_if(m_transitions.begin(), m_transitions.end(), [id](const std::unique_ptr<Transition> &t) { return t->getId() == id; }), m_transitions.end());
-    m_arcs.erase(std::remove_if(m_arcs.begin(), m_arcs.end(), [id](const std::unique_ptr<Arc> &a) { return a->getTransitionId() == id; }), m_arcs.end());
+/** @brief Removes a transition and cascade-deletes all arcs connected to it. */
+void PnNet::remove_transition(int id) {
+    transitions_.erase(std::remove_if(transitions_.begin(), transitions_.end(),
+        [id](const std::unique_ptr<Transition> &t) { return t->id() == id; }), transitions_.end());
+    arcs_.erase(std::remove_if(arcs_.begin(), arcs_.end(),
+        [id](const std::unique_ptr<Arc> &a) { return a->transition_id() == id; }), arcs_.end());
 }
 
-Transition* PnNet::findTransitionById(int id) {
-    for (auto &t : m_transitions)
-        if (t->getId() == id) return t.get();
+/** @brief Finds a transition by ID (mutable version). */
+Transition* PnNet::find_transition_by_id(int id) {
+    for (auto &t : transitions_)
+        if (t->id() == id) return t.get();
     return nullptr;
 }
 
-Transition* PnNet::findTransitionByName(const std::string &name) {
-    for (auto &t : m_transitions)
-        if (t->getName() == name) return t.get();
+/** @brief Finds a transition by name (mutable version). */
+Transition* PnNet::find_transition_by_name(const std::string &name) {
+    for (auto &t : transitions_)
+        if (t->name() == name) return t.get();
     return nullptr;
 }
 
-const std::vector<std::unique_ptr<Transition>>& PnNet::getTransitions() const { return m_transitions; }
+/** @brief Returns the full transition collection. */
+const std::vector<std::unique_ptr<Transition>>& PnNet::transitions() const { return transitions_; }
 
-const Transition* PnNet::findTransitionById(int id) const {
-    for (const auto &t : m_transitions)
-        if (t->getId() == id) return t.get();
+/** @brief Finds a transition by ID (const version). */
+const Transition* PnNet::find_transition_by_id(int id) const {
+    for (const auto &t : transitions_)
+        if (t->id() == id) return t.get();
     return nullptr;
 }
 
-const Transition* PnNet::findTransitionByName(const std::string &name) const {
-    for (const auto &t : m_transitions)
-        if (t->getName() == name) return t.get();
+/** @brief Finds a transition by name (const version). */
+const Transition* PnNet::find_transition_by_name(const std::string &name) const {
+    for (const auto &t : transitions_)
+        if (t->name() == name) return t.get();
     return nullptr;
 }
 
+///////////////////////////////////////////////////////////////////////////////
 // Arcs
 
-Arc* PnNet::addArc(ArcType type, int placeId, int transitionId, int weight) {
-    m_arcs.push_back(std::make_unique<Arc>(m_nextArcId++, type, placeId, transitionId, weight));
-    return m_arcs.back().get();
+/** @brief Creates an arc with an auto-assigned ID. */
+Arc* PnNet::add_arc(ArcType type, int placeId, int transitionId, int weight) {
+    arcs_.push_back(std::make_unique<Arc>(next_arc_id_++, type, placeId, transitionId, weight));
+    return arcs_.back().get();
 }
 
-void PnNet::removeArc(int id) {
-    m_arcs.erase(std::remove_if(m_arcs.begin(), m_arcs.end(), [id](const std::unique_ptr<Arc> &a) { return a->getId() == id; }), m_arcs.end());
+/** @brief Removes the arc with the given ID. */
+void PnNet::remove_arc(int id) {
+    arcs_.erase(std::remove_if(arcs_.begin(), arcs_.end(),
+        [id](const std::unique_ptr<Arc> &a) { return a->id() == id; }), arcs_.end());
 }
 
-Arc* PnNet::findArcById(int id) {
-    for (auto &a : m_arcs)
-        if (a->getId() == id) return a.get();
+/** @brief Finds an arc by ID. */
+Arc* PnNet::find_arc_by_id(int id) {
+    for (auto &a : arcs_)
+        if (a->id() == id) return a.get();
     return nullptr;
 }
 
-std::vector<Arc*> PnNet::getArcsForPlace(int placeId) const {
+/** @brief Returns all arcs connected to the given place. */
+std::vector<Arc*> PnNet::arcs_for_place(int placeId) const {
     std::vector<Arc*> result;
-    for (auto &a : m_arcs)
-        if (a->getPlaceId() == placeId) result.push_back(a.get());
+    for (auto &a : arcs_)
+        if (a->place_id() == placeId) result.push_back(a.get());
     return result;
 }
 
-std::vector<Arc*> PnNet::getArcsForTransition(int transitionId) const {
+/** @brief Returns all arcs connected to the given transition. */
+std::vector<Arc*> PnNet::arcs_for_transition(int transitionId) const {
     std::vector<Arc*> result;
-    for (auto &a : m_arcs)
-        if (a->getTransitionId() == transitionId) result.push_back(a.get());
+    for (auto &a : arcs_)
+        if (a->transition_id() == transitionId) result.push_back(a.get());
     return result;
 }
 
-const std::vector<std::unique_ptr<Arc>>& PnNet::getArcs() const { return m_arcs; }
+/** @brief Returns the full arc collection. */
+const std::vector<std::unique_ptr<Arc>>& PnNet::arcs() const { return arcs_; }
 
-// Resets everything
+///////////////////////////////////////////////////////////////////////////////
+// Reset
 
+/** @brief Removes all elements and resets all ID counters to 1. */
 void PnNet::clear() {
-    m_places.clear();
-    m_transitions.clear();
-    m_arcs.clear();
-    m_inputs.clear();
-    m_outputs.clear();
-    m_variables.clear();
-    m_name.clear();
-    m_comment.clear();
-    m_nextPlaceId = 1;
-    m_nextTransitionId = 1;
-    m_nextArcId = 1;
+    places_.clear();
+    transitions_.clear();
+    arcs_.clear();
+    inputs_.clear();
+    outputs_.clear();
+    variables_.clear();
+    name_.clear();
+    comment_.clear();
+    next_place_id_      = 1;
+    next_transition_id_ = 1;
+    next_arc_id_        = 1;
 }

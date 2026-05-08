@@ -1,9 +1,17 @@
 /**
  * @file place_dialog.cpp
- * @brief Implementation of PlaceDialog.
- * @author xfacka00 (xfacka00@stud.fit.vutbr.cz)
- * @author xlogin02 (xlogin02@stud.fit.vutbr.cz)
+ * @author Samuel Fačka (xfackas00)
+ * @author Arťom Hanzel (xhanzea00)
+ * @brief PlaceDialog implementation.
+ * @version 0.1
  * @date 2026-04
+ *
+ * @copyright Copyright (c) 2026
+ *
+ * What happens here:
+ *   1. Constructor builds a form with name / initial-tokens / action fields
+ *   2. All fields are pre-filled from the constructor arguments
+ *   3. name() / tokens() / action() return the current field values
  */
 
 #include "place_dialog.h"
@@ -16,6 +24,11 @@
 #include <QPlainTextEdit>
 #include <QLabel>
 
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief constructs the dialog pre-filled with existing place values
+ */
 PlaceDialog::PlaceDialog(const QString &name, int tokens,
                          const QString &action, QWidget *parent)
     : QDialog(parent)
@@ -34,7 +47,9 @@ PlaceDialog::PlaceDialog(const QString &name, int tokens,
 
     m_actionEdit->setPlainText(action);
     m_actionEdit->setFixedHeight(100);
-    m_actionEdit->setPlaceholderText("C code executed when a token is added, e.g.:\n  output(\"out\", tokens(\"P1\"));");
+    m_actionEdit->setPlaceholderText(
+        "C code executed when a token is added, e.g.:\n"
+        "  output(\"out\", tokens(\"P1\"));");
 
     auto *form = new QFormLayout;
     form->addRow("Name:", m_nameEdit);
@@ -51,6 +66,13 @@ PlaceDialog::PlaceDialog(const QString &name, int tokens,
     layout->addWidget(buttons);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief returns the trimmed place name */
 QString PlaceDialog::name()   const { return m_nameEdit->text().trimmed(); }
+
+/** @brief returns the initial token count */
 int     PlaceDialog::tokens() const { return m_tokensSpin->value(); }
+
+/** @brief returns the trimmed C action code */
 QString PlaceDialog::action() const { return m_actionEdit->toPlainText().trimmed(); }

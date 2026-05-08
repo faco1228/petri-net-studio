@@ -1,4 +1,3 @@
-# Build artifacts
 src/*.o
 src/moc_*.cpp
 src/moc_*.o
@@ -8,22 +7,17 @@ src/Makefile
 src/icp_petri
 src/icp_petri.app/
 
-# Generated interpreter
 generated/*.cpp
 generated/interpreter_*
 generated/Makefile
 
-# Doxygen output
 doc/html/
 doc/latex/
 
-# Qt Creator
 *.pro.user
 *.pro.user.*
 
-# macOS
 .DS_Store
 
-# Archives
 *.zip
 *.tar.gz

@@ -1,35 +1,66 @@
 /**
  * @file pn_transition.cpp
+ * @author Samuel Fačka (xfackas00)
+ * @author Arťom Hanzel (xhanzea00)
  * @brief Implementation of the Transition class.
- * @author xfacka00 (xfacka00@stud.fit.vutbr.cz)
- * @author xlogin02 (xlogin02@stud.fit.vutbr.cz)
+ * @version 0.1
  * @date 2026-04
+ *
+ * @copyright Copyright (c) 2026
+ *
+ * What happens here:
+ *   1. Initialises all Transition members via the constructor initializer list
+ *   2. Provides trivial accessor and mutator implementations for all fields
  */
 
 #include "pn_transition.h"
 
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief Constructs a Transition with the given ID, name and canvas position. */
 Transition::Transition(int id, const std::string &name, QPointF pos)
-    : m_id(id)
-    , m_name(name)
-    , m_pos(pos)
+    : id_(id)
+    , name_(name)
+    , pos_(pos)
 {}
 
-int Transition::getId() const { return m_id; }
+///////////////////////////////////////////////////////////////////////////////
 
-const std::string& Transition::getName() const { return m_name; }
-void Transition::setName(const std::string &name) { m_name = name; }
+/** @brief Returns the unique transition ID. */
+int Transition::id() const { return id_; }
 
-QPointF Transition::getPos() const { return m_pos; }
-void Transition::setPos(QPointF pos) { m_pos = pos; }
+/** @brief Returns the transition label. */
+const std::string& Transition::name() const { return name_; }
 
-const std::string& Transition::getEventName() const { return m_eventName; }
-void Transition::setEventName(const std::string &event) { m_eventName = event; }
+/** @brief Sets the transition label. */
+void Transition::set_name(const std::string &name) { name_ = name; }
 
-const std::string& Transition::getGuard() const { return m_guard; }
-void Transition::setGuard(const std::string &guard) { m_guard = guard; }
+/** @brief Returns the canvas centre position. */
+QPointF Transition::pos() const { return pos_; }
 
-const std::string& Transition::getDelayExpr() const { return m_delayExpr; }
-void Transition::setDelayExpr(const std::string &expr) { m_delayExpr = expr; }
+/** @brief Sets the canvas centre position. */
+void Transition::set_pos(QPointF pos) { pos_ = pos; }
 
-const std::string& Transition::getAction() const { return m_action; }
-void Transition::setAction(const std::string &action) { m_action = action; }
+/** @brief Returns the triggering event name (empty = spontaneous). */
+const std::string& Transition::event_name() const { return event_name_; }
+
+/** @brief Sets the triggering event name. */
+void Transition::set_event_name(const std::string &event) { event_name_ = event; }
+
+/** @brief Returns the guard expression (empty = no guard). */
+const std::string& Transition::guard() const { return guard_; }
+
+/** @brief Sets the guard expression. */
+void Transition::set_guard(const std::string &guard) { guard_ = guard; }
+
+/** @brief Returns the delay expression (empty = no delay). */
+const std::string& Transition::delay_expr() const { return delay_expr_; }
+
+/** @brief Sets the delay expression. */
+void Transition::set_delay_expr(const std::string &expr) { delay_expr_ = expr; }
+
+/** @brief Returns the action code (empty = no action). */
+const std::string& Transition::action() const { return action_; }
+
+/** @brief Sets the action code. */
+void Transition::set_action(const std::string &action) { action_ = action; }

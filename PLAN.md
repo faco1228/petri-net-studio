@@ -1076,54 +1076,51 @@ make run
 - [x] `PnNet` — agregát, ID countery, add/remove/find metódy
 - [x] `PnFileParser` — načítanie .pn súboru (všetky sekcie)
 - [x] `PnFileWriter` — serializácia PnNet do .pn súboru
-- [ ] Parser — otestovať round-trip na tof_pn_5s.pn a tof_pn.pn
+- [x] Parser — round-trip otestovaný: 147/147 passed (tof_pn_5s, tof_pn, semaphore)
 
 ### GUI — Editor (src/gui/)
-- [x] `MainWindow` — menu, toolbar, QTabWidget, docks (Properties, EventLog)
-- [x] `AppController` — net(), addPlace/Transition/Arc, removeX, updateItemPos, load/save
+- [x] `MainWindow` — menu, toolbar, QTabWidget, docks (Properties, EventLog, InjectInput)
+- [x] `AppController` — net(), addPlace/Transition/Arc, removeX, updateItemPos, load/save, generateAndRun, stopInterpreter
 - [x] `GraphicsEditor` — QGraphicsView, módy (Select/AddPlace/AddTransition/AddArc)
-- [x] `GraphicsPlaceItem` — kruh, meno, počet tokenov, drag, monitor highlight, boundingRect
-- [x] `GraphicsTransitionItem` — obdĺžnik, meno, drag, enabled/pending farby, boundingRect
+- [x] `GraphicsPlaceItem` — kruh, meno, počet tokenov, drag, boundingRect
+- [x] `GraphicsTransitionItem` — obdĺžnik, meno, drag, boundingRect
 - [x] `GraphicsArcItem` — šipka, váha, arrowhead, updateGeometry()
-- [x] `GraphicsEditor` — napojiť toolbar v MainWindow na setMode() (modeChanged signal)
-- [ ] `onOpenNet` / `onSaveNet` / `onSaveNetAs` — zapojiť PnFileParser/Writer cez AppController
-- [ ] `onNewNet` — NewNetDialog + vyčistiť scénu
-- [ ] `PropertiesPanel` — editácia vlastností vybraného Place/Transition
-- [ ] `PlaceDialog` — dialóg (meno, tokeny, akcia)
-- [ ] `TransitionDialog` — dialóg (meno, event, guard, delay, akcia)
-- [ ] `ArcDialog` — dialóg (váha)
-- [ ] `VariablesDialog` — dialóg (vstupy, výstupy, premenné)
-- [ ] `NewNetDialog` — dialóg (meno, komentár)
+- [x] `GraphicsEditor` — toolbar sync cez modeChanged signal
+- [x] `onOpenNet` / `onSaveNet` / `onSaveNetAs` — napojené cez AppController
+- [x] `onNewNet` — NewNetDialog + vyčistenie scény
+- [x] `PlaceDialog` — dialóg (meno, tokeny, akcia)
+- [x] `TransitionDialog` — dialóg (meno, event, guard, delay, akcia)
+- [x] `ArcDialog` — dialóg (váha)
+- [x] `NewNetDialog` — dialóg (meno, komentár)
+- [ ] `PropertiesPanel` — inline dock editácia (stub)
+- [ ] `VariablesDialog` — dialóg (vstupy, výstupy, premenné) (stub)
 
 ### GUI — Monitor (src/gui/)
-- [ ] `MonitorPanel` — live marking, enabled/pending prechody
-- [ ] `InjectPanel` — injektovanie vstupov cez UDP
-- [ ] `EventLogView` — scrollovací log udalostí
-- [ ] `MonitorAdapter` — parsovanie STATE/LOG správ → Qt signály
+- [x] `MonitorPanel` — live tabuľka tokenov + enabled prechody
+- [x] `InjectPanel` — injektovanie vstupov cez UDP, combo z net inputs
+- [x] `EventLogView` — scrollovací log s časovými razítkami + compile output
+- [x] `MonitorAdapter` — napojenie UdpClient signálov na GUI
 
 ### Sieť (src/network/)
-- [ ] `UdpClient` — QUdpSocket, send INPUT/QUIT, receive STATE/LOG
-- [ ] `UdpServer` — POSIX socket v interpreti (vlákno)
+- [x] `UdpClient` — QUdpSocket, bind 7001, send INPUT/QUIT, emit stateReceived/logReceived
 
-### Engine (src/engine/)
-- [ ] `PetriNetEngine` — marking, isEnabled(), fireMaximalSet(), event loop
-- [ ] `TimerManager` — priority_queue, schedule/cancel, popExpired()
-- [ ] `ScriptRuntime` — valueof(), defined(), output(), tokens(), elapsed(), now()
-
-### Generátor kódu (src/codegen/)
-- [ ] `CodeGenerator` — generuje net_NAME.cpp z PnNet
-- [ ] Šablóna `interpreter_main.cpp.tpl`
-- [ ] Šablóna `runtime_header.h.tpl`
-- [ ] Makefile pre generovaný interpret
+### Engine / Generátor kódu (src/codegen/)
+- [x] `CodeGenerator` — generuje kompletný standalone net_NAME.cpp
+- [x] Runtime engine — marking, isEnabled, fireMaximalSet (greedy), timers (zombie), event-driven
+- [x] Script API — valueof(), defined(), output(), tokens(), elapsed()
+- [x] UDP server v interpreti — POSIX non-blocking recvfrom, send STATE/LOG/ANNOUNCE
+- [x] Generovaný interpret skompilovaný a otestovaný (semaphore, tof_pn_5s, tof_pn)
 
 ### Build a dokumentácia
-- [x] `make` — projekt sa prekladá
-- [x] `make run` — aplikácia sa spustí a zobrazí okno
+- [x] `make` — projekt sa prekladá (0 errors)
+- [x] `make run` — aplikácia sa spustí
+- [x] `make test` — 147/147 passed
 - [ ] `make doxygen` — generuje HTML dokumentáciu
 - [ ] `make pack` — vytvorí archív pre odovzdanie
 - [ ] `README.txt` — doplniť po implementácii
 
 ### Testovanie
-- [ ] Round-trip test: load tof_pn_5s.pn → save → load znova → porovnať
-- [ ] End-to-end: nakresliť sieť → generate → run → inject in=1 → monitor
+- [x] Round-trip test: 147/147 passed na všetkých 3 príkladoch
+- [x] Generovaný interpret: semaphore posiela správny STATE + ANNOUNCE cez UDP
+- [ ] End-to-end GUI: nakresliť sieť → generate → run → inject → monitor
 - [ ] Preklad na serveri merlin (Qt 5.5.1)

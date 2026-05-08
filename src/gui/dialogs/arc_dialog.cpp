@@ -1,9 +1,16 @@
 /**
  * @file arc_dialog.cpp
+ * @author Samuel Fačka (xfackas00)
+ * @author Arťom Hanzel (xhanzea00)
  * @brief Implementation of ArcDialog.
- * @author xfacka00 (xfacka00@stud.fit.vutbr.cz)
- * @author xlogin02 (xlogin02@stud.fit.vutbr.cz)
+ * @version 0.1
  * @date 2026-04
+ *
+ * @copyright Copyright (c) 2026
+ *
+ * What happens here:
+ *   1. Constructor builds a form layout with a single weight spin box
+ *   2. Ok/Cancel buttons are connected to accept()/reject()
  */
 
 #include "arc_dialog.h"
@@ -13,6 +20,9 @@
 #include <QDialogButtonBox>
 #include <QSpinBox>
 
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief Builds the dialog layout with the weight spin box pre-filled. */
 ArcDialog::ArcDialog(int currentWeight, QWidget *parent)
     : QDialog(parent)
     , m_weightSpin(new QSpinBox(this))
@@ -36,4 +46,7 @@ ArcDialog::ArcDialog(int currentWeight, QWidget *parent)
     layout->addWidget(buttons);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief Returns the weight currently shown in the spin box. */
 int ArcDialog::weight() const { return m_weightSpin->value(); }

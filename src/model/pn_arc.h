@@ -1,40 +1,104 @@
 /**
  * @file pn_arc.h
- * @brief Arc class - oriented edge between a place and a transition.
- * @author xfacka00 (xfacka00@stud.fit.vutbr.cz)
- * @author xlogin02 (xlogin02@stud.fit.vutbr.cz)
+ * @author Samuel Fačka (xfackas00)
+ * @author Arťom Hanzel (xhanzea00)
+ * @brief Arc class — oriented edge between a place and a transition.
+ * @version 0.1
  * @date 2026-04
+ *
+ * @copyright Copyright (c) 2026
+ *
+ * What happens here:
+ *   1. Declares the Arc class connecting one place and one transition
+ *   2. Stores arc direction (INPUT or OUTPUT), weight, and optional waypoints for curved edges
  */
 
-#pragma once
+#ifndef PN_ARC_H
+#define PN_ARC_H
 
 #include <vector>
 #include <QPointF>
 #include "../inc/pn_model.h"
 
+/**
+ * @brief Represents a directed edge in a Petri net.
+ *
+ * Each arc connects exactly one place and one transition.  The direction
+ * (ArcType::INPUT or ArcType::OUTPUT) determines whether tokens are
+ * consumed from or produced into the place when the transition fires.
+ */
 class Arc
 {
 public:
+    /**
+     * @brief Constructs an arc.
+     *
+     * @param id           unique identifier assigned by PnNet
+     * @param type         INPUT (place->transition) or OUTPUT (transition->place)
+     * @param placeId      ID of the connected place
+     * @param transitionId ID of the connected transition
+     * @param weight       number of tokens consumed/produced per firing
+     */
     Arc(int id, ArcType type, int placeId, int transitionId, int weight = 1);
 
-    int getId() const;
-    ArcType getType() const;
+    /**
+     * @brief Returns the unique arc identifier.
+     * @return integer ID
+     */
+    int id() const;
 
-    int getPlaceId() const;
-    int getTransitionId() const;
+    /**
+     * @brief Returns the arc direction.
+     * @return ArcType::INPUT or ArcType::OUTPUT
+     */
+    ArcType type() const;
 
-    int getWeight() const;
-    void setWeight(int weight);
+    /**
+     * @brief Returns the ID of the connected place.
+     * @return place ID
+     */
+    int place_id() const;
 
-    // Intermediate control points for non-straight edges. Empty = straight line.
-    const std::vector<QPointF>& getWaypoints() const;
-    void setWaypoints(const std::vector<QPointF> &points);
+    /**
+     * @brief Returns the ID of the connected transition.
+     * @return transition ID
+     */
+    int transition_id() const;
+
+    /**
+     * @brief Returns the arc weight (tokens consumed/produced per firing).
+     * @return positive integer
+     */
+    int weight() const;
+
+    /**
+     * @brief Sets the arc weight.
+     * @param weight new weight (must be >= 1)
+     */
+    void set_weight(int weight);
+
+    /**
+     * @brief Returns the list of intermediate waypoints for curved rendering.
+     *
+     * An empty list means the arc is drawn as a straight line.
+     *
+     * @return const reference to waypoint vector
+     */
+    const std::vector<QPointF>& waypoints() const;
+
+    /**
+     * @brief Sets the intermediate waypoints.
+     * @param points ordered list of scene-coordinate control points
+     */
+    void set_waypoints(const std::vector<QPointF> &points);
 
 private:
-    int m_id;
-    ArcType m_type;
-    int m_placeId;
-    int m_transitionId;
-    int m_weight;
-    std::vector<QPointF> m_waypoints;
+    int                  id_;            ///< unique arc ID
+    ArcType              type_;          ///< INPUT or OUTPUT
+    int                  place_id_;      ///< connected place
+    int                  transition_id_; ///< connected transition
+    int                  weight_;        ///< tokens consumed/produced
+    std::vector<QPointF> waypoints_;     ///< optional intermediate control points
 };
+
+#endif // PN_ARC_H

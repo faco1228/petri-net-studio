@@ -40,53 +40,53 @@ static int g_fail = 0;
 
 static void compareNets(const PnNet &a, const PnNet &b)
 {
-    CHECK(a.getName() == b.getName(),
-          "name: '" + a.getName() + "'");
+    CHECK(a.name() == b.name(),
+          "name: '" + a.name() + "'");
 
-    CHECK(a.getPlaces().size() == b.getPlaces().size(),
-          "place count: " + std::to_string(a.getPlaces().size()));
+    CHECK(a.places().size() == b.places().size(),
+          "place count: " + std::to_string(a.places().size()));
 
-    CHECK(a.getTransitions().size() == b.getTransitions().size(),
-          "transition count: " + std::to_string(a.getTransitions().size()));
+    CHECK(a.transitions().size() == b.transitions().size(),
+          "transition count: " + std::to_string(a.transitions().size()));
 
-    CHECK(a.getArcs().size() == b.getArcs().size(),
-          "arc count: " + std::to_string(a.getArcs().size()));
+    CHECK(a.arcs().size() == b.arcs().size(),
+          "arc count: " + std::to_string(a.arcs().size()));
 
-    CHECK(a.getInputs().size() == b.getInputs().size(),
-          "input count: " + std::to_string(a.getInputs().size()));
+    CHECK(a.inputs().size() == b.inputs().size(),
+          "input count: " + std::to_string(a.inputs().size()));
 
-    CHECK(a.getOutputs().size() == b.getOutputs().size(),
-          "output count: " + std::to_string(a.getOutputs().size()));
+    CHECK(a.outputs().size() == b.outputs().size(),
+          "output count: " + std::to_string(a.outputs().size()));
 
-    CHECK(a.getVariables().size() == b.getVariables().size(),
-          "variable count: " + std::to_string(a.getVariables().size()));
+    CHECK(a.variables().size() == b.variables().size(),
+          "variable count: " + std::to_string(a.variables().size()));
 
     // Compare places by name
-    for (const auto &p : a.getPlaces()) {
-        const Place *p2 = b.findPlaceByName(p->getName());
+    for (const auto &p : a.places()) {
+        const Place *p2 = b.find_place_by_name(p->name());
         CHECK(p2 != nullptr,
-              "place exists: " + p->getName());
+              "place exists: " + p->name());
         if (!p2) continue;
-        CHECK(p->getInitialTokens() == p2->getInitialTokens(),
-              "  tokens " + p->getName() + ": " + std::to_string(p->getInitialTokens()));
-        CHECK(p->getAction() == p2->getAction(),
-              "  action " + p->getName());
+        CHECK(p->initial_tokens() == p2->initial_tokens(),
+              "  tokens " + p->name() + ": " + std::to_string(p->initial_tokens()));
+        CHECK(p->action() == p2->action(),
+              "  action " + p->name());
     }
 
     // Compare transitions by name
-    for (const auto &t : a.getTransitions()) {
-        const Transition *t2 = b.findTransitionByName(t->getName());
+    for (const auto &t : a.transitions()) {
+        const Transition *t2 = b.find_transition_by_name(t->name());
         CHECK(t2 != nullptr,
-              "transition exists: " + t->getName());
+              "transition exists: " + t->name());
         if (!t2) continue;
-        CHECK(t->getEventName() == t2->getEventName(),
-              "  event " + t->getName() + ": '" + t->getEventName() + "'");
-        CHECK(t->getGuard() == t2->getGuard(),
-              "  guard " + t->getName());
-        CHECK(t->getDelayExpr() == t2->getDelayExpr(),
-              "  delay " + t->getName() + ": '" + t->getDelayExpr() + "'");
-        CHECK(t->getAction() == t2->getAction(),
-              "  action " + t->getName());
+        CHECK(t->event_name() == t2->event_name(),
+              "  event " + t->name() + ": '" + t->event_name() + "'");
+        CHECK(t->guard() == t2->guard(),
+              "  guard " + t->name());
+        CHECK(t->delay_expr() == t2->delay_expr(),
+              "  delay " + t->name() + ": '" + t->delay_expr() + "'");
+        CHECK(t->action() == t2->action(),
+              "  action " + t->name());
     }
 }
 

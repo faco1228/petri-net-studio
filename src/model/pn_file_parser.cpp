@@ -1,9 +1,21 @@
 /**
  * @file pn_file_parser.cpp
+ * @author Samuel Fačka (xfackas00)
+ * @author Arťom Hanzel (xhanzea00)
  * @brief Implementation of PnFileParser.
- * @author xfacka00 (xfacka00@stud.fit.vutbr.cz)
- * @author xlogin02 (xlogin02@stud.fit.vutbr.cz)
+ * @version 0.1
  * @date 2026-04
+ *
+ * @copyright Copyright (c) 2026
+ *
+ * What happens here:
+ *   1. load() creates a parser instance and delegates to parse()
+ *   2. parse() reads the file, identifies each section header, and dispatches
+ *      to the appropriate section parser
+ *   3. Section parsers consume indented content until the next unindented header
+ *   4. readBlock() accumulates a balanced { ... } block potentially spanning
+ *      multiple lines
+ *   5. applyAutoLayout() fills in missing positions with a uniform grid
  */
 
 #include "pn_file_parser.h"
@@ -13,23 +25,34 @@
 #include <algorithm>
 #include <regex>
 
-// ---- Public static entry point ----
+///////////////////////////////////////////////////////////////////////////////
+// Public static entry point
 
+/** @brief Creates a temporary parser instance and runs the full parse pipeline. */
 std::unique_ptr<PnNet> PnFileParser::load(const std::string &path, std::string &errorMsg)
 {
     PnFileParser p;
     return p.parse(path, errorMsg);
 }
 
-// ---- Constructor ----
+///////////////////////////////////////////////////////////////////////////////
+// Constructor
 
+/** @brief Initialises line_idx_ to 0 and creates a fresh PnNet. */
 PnFileParser::PnFileParser()
-    : m_lineIdx(0)
-    , m_net(std::make_unique<PnNet>())
+    : line_idx_(0)
+    , net_(std::make_unique<PnNet>())
 {}
 
-// ---- Main parse routine ----
+///////////////////////////////////////////////////////////////////////////////
+// Main parse routine
 
+/**
+ * @brief Reads the file into lines_ then drives each section parser in order.
+ *
+ * Sections can appear with Czech or Slovak header variants.  Required sections
+ * (Name, Places, Transitions) return nullptr if missing.
+ */
 std::unique_ptr<PnNet> PnFileParser::parse(const std::string &path, std::string &errorMsg)
 {
     std::ifstream file(path);
@@ -38,12 +61,13 @@ std::unique_ptr<PnNet> PnFileParser::parse(const std::string &path, std::string 
         return nullptr;
     }
 
+    // Read all lines upfront
     std::string line;
     while (std::getline(file, line))
-        m_lines.push_back(line);
+        lines_.push_back(line);
     file.close();
 
-    m_lineIdx = 0;
+    line_idx_ = 0;
 
     // Sections must appear in order but are otherwise flexible.
     // Each section lists alternative header prefixes (Czech and Slovak variants).
@@ -64,7 +88,7 @@ std::unique_ptr<PnNet> PnFileParser::parse(const std::string &path, std::string 
     };
 
     for (auto &sec : sections) {
-        // Seek to a line that starts with any of the accepted headers
+        // Seek forward to a line that starts with any of the accepted headers
         bool found = false;
         while (!atEnd()) {
             std::string stripped = trim(stripComment(currentLine()));
@@ -83,25 +107,28 @@ std::unique_ptr<PnNet> PnFileParser::parse(const std::string &path, std::string 
                 errorMsg = "Missing required section: " + sec.headers[0];
                 return nullptr;
             }
-            continue;
+            continue; // optional section absent — skip
         }
 
+        // Dispatch to the section parser
         if (!(this->*sec.parser)(errorMsg))
             return nullptr;
     }
 
     applyAutoLayout();
-    return std::move(m_net);
+    return std::move(net_);
 }
 
-// ---- Section parsers ----
+///////////////////////////////////////////////////////////////////////////////
+// Section parsers
 
+/** @brief Reads the first non-empty content line after the name header. */
 bool PnFileParser::parseName(std::string &errorMsg)
 {
     while (!atEnd()) {
         std::string line = trim(stripComment(currentLine()));
         if (!line.empty()) {
-            m_net->setName(line);
+            net_->set_name(line);
             advance();
             return true;
         }
@@ -111,14 +138,19 @@ bool PnFileParser::parseName(std::string &errorMsg)
     return false;
 }
 
+/**
+ * @brief Reads indented lines as free-form comment text.
+ *
+ * Stops when an unindented line ending with ':' is encountered (next section).
+ */
 bool PnFileParser::parseComment(std::string &/*errorMsg*/)
 {
     std::string comment;
     while (!atEnd()) {
-        std::string raw = stripComment(currentLine());
+        std::string raw  = stripComment(currentLine());
         std::string line = trim(raw);
 
-        // Stop at next section header (no leading whitespace and ends with ':')
+        // Stop at next section header: unindented and ends with ':'
         if (!line.empty() && raw.front() != ' ' && raw.front() != '\t' && line.back() == ':')
             break;
 
@@ -126,14 +158,17 @@ bool PnFileParser::parseComment(std::string &/*errorMsg*/)
         comment += line;
         advance();
     }
-    m_net->setComment(trim(comment));
+    net_->set_comment(trim(comment));
     return true;
 }
 
+/**
+ * @brief Reads one input name per indented line until the next section header.
+ */
 bool PnFileParser::parseInputs(std::string &/*errorMsg*/)
 {
     while (!atEnd()) {
-        std::string raw = stripComment(currentLine());
+        std::string raw  = stripComment(currentLine());
         std::string line = trim(raw);
 
         if (line.empty()) { advance(); continue; }
@@ -142,16 +177,19 @@ bool PnFileParser::parseInputs(std::string &/*errorMsg*/)
         if (raw.front() != ' ' && raw.front() != '\t' && line.back() == ':')
             break;
 
-        m_net->addInput(line);
+        net_->add_input(line);
         advance();
     }
     return true;
 }
 
+/**
+ * @brief Reads one output name per indented line until the next section header.
+ */
 bool PnFileParser::parseOutputs(std::string &/*errorMsg*/)
 {
     while (!atEnd()) {
-        std::string raw = stripComment(currentLine());
+        std::string raw  = stripComment(currentLine());
         std::string line = trim(raw);
 
         if (line.empty()) { advance(); continue; }
@@ -159,17 +197,21 @@ bool PnFileParser::parseOutputs(std::string &/*errorMsg*/)
         if (raw.front() != ' ' && raw.front() != '\t' && line.back() == ':')
             break;
 
-        m_net->addOutput(line);
+        net_->add_output(line);
         advance();
     }
     return true;
 }
 
+/**
+ * @brief Parses "type name = value" variable declarations.
+ *
+ * Format: one declaration per indented line, optionally with a trailing '#' comment.
+ */
 bool PnFileParser::parseVariables(std::string &/*errorMsg*/)
 {
-    // Format: "type name = value  # optional comment"
     while (!atEnd()) {
-        std::string raw = stripComment(currentLine());
+        std::string raw  = stripComment(currentLine());
         std::string line = trim(raw);
 
         if (line.empty()) { advance(); continue; }
@@ -177,41 +219,44 @@ bool PnFileParser::parseVariables(std::string &/*errorMsg*/)
         if (raw.front() != ' ' && raw.front() != '\t' && line.back() == ':')
             break;
 
-        // Split on '='
+        // Split on '=' to separate lhs (type name) from rhs (value)
         auto eq = line.find('=');
         if (eq == std::string::npos) { advance(); continue; }
 
         std::string lhs = trim(line.substr(0, eq));
         std::string rhs = trim(line.substr(eq + 1));
 
-        // lhs is "type name"
+        // lhs is "type name" — split on the last space
         auto space = lhs.rfind(' ');
         if (space == std::string::npos) { advance(); continue; }
 
         Variable v;
-        v.type = trim(lhs.substr(0, space));
-        v.name = trim(lhs.substr(space + 1));
+        v.type  = trim(lhs.substr(0, space));
+        v.name  = trim(lhs.substr(space + 1));
         v.value = rhs;
-        m_net->addVariable(v);
+        net_->add_variable(v);
         advance();
     }
     return true;
 }
 
+/**
+ * @brief Parses place declarations: NAME (tokens) [pos: x,y] [: { action }].
+ *
+ * Stops at the transitions section header.
+ */
 bool PnFileParser::parsePlaces(std::string &errorMsg)
 {
-    // Format: NAME (tokens) [pos: x,y] [: { action }]
-    static const std::regex placeRe(
-        R"(^(\w+)\s*\((\d+)\)(.*)$)"
-    );
+    // Match: identifier '(' digit+ ')' optional-rest
+    static const std::regex placeRe(R"(^(\w+)\s*\((\d+)\)(.*)$)");
 
     while (!atEnd()) {
-        std::string raw = stripComment(currentLine());
+        std::string raw  = stripComment(currentLine());
         std::string line = trim(raw);
 
         if (line.empty()) { advance(); continue; }
 
-        // Stop at transitions section (Czech or Slovak header)
+        // Stop at the transitions section header
         if (line.find("Přechody") == 0 || line.find("Prechody") == 0)
             break;
 
@@ -221,14 +266,14 @@ bool PnFileParser::parsePlaces(std::string &errorMsg)
             continue;
         }
 
-        std::string name = m[1];
-        int tokens = std::stoi(m[2]);
-        std::string rest = trim(m[3].str());
+        std::string name   = m[1];
+        int         tokens = std::stoi(m[2]);
+        std::string rest   = trim(m[3].str());
 
         double px = -1, py = -1;
         std::string action;
 
-        // Check for optional "pos: x,y"
+        // Parse optional "pos: x,y"
         if (rest.find("pos:") == 0) {
             std::string posStr = rest.substr(4);
             auto comma = posStr.find(',');
@@ -245,12 +290,12 @@ bool PnFileParser::parsePlaces(std::string &errorMsg)
                 rest.clear();
         }
 
-        // Check for action block ": { ... }"
+        // Parse optional action block ": { ... }"
         if (!rest.empty() && rest.front() == ':') {
             rest = trim(rest.substr(1));
             if (!rest.empty() && rest.front() == '{') {
-                // Put this back for readBlock to consume
-                m_lines[m_lineIdx] = rest;
+                // Reuse the current line buffer so readBlock can consume the '{'
+                lines_[line_idx_] = rest;
                 if (!readBlock(action, errorMsg))
                     return false;
             }
@@ -259,65 +304,68 @@ bool PnFileParser::parsePlaces(std::string &errorMsg)
         }
 
         QPointF pos = (px >= 0 && py >= 0) ? QPointF(px, py) : QPointF(-1, -1);
-        m_net->addPlace(name, tokens, pos, action);
+        net_->add_place(name, tokens, pos, action);
     }
     return true;
 }
 
+/**
+ * @brief Parses transition declarations including sub-lines in:, out:, when:, do:.
+ *
+ * Format per transition:
+ *   NAME [pos: x,y] :\n
+ *       in:  P1*w, P2\n
+ *       out: P3*w\n
+ *       when: [event] [[guard]] [@ delay]\n
+ *       do: { action }\n
+ */
 bool PnFileParser::parseTransitions(std::string &errorMsg)
 {
-    // Format:
-    // NAME [pos: x,y] :
-    //     in:  P1*w, P2*w
-    //     out: P3*w
-    //     when: [event] [[guard]] [@ delay]
-    //     do: { action }
-
     static const std::regex transRe(R"(^(\w+)(.*):\s*$)");
     static const std::regex arcRe(R"((\w+)(?:\*(\d+))?)");
 
     while (!atEnd()) {
-        std::string raw = stripComment(currentLine());
+        std::string raw  = stripComment(currentLine());
         std::string line = trim(raw);
 
         if (line.empty()) { advance(); continue; }
 
         std::smatch m;
-        if (!std::regex_match(line, m, transRe))  { advance(); continue; }
+        if (!std::regex_match(line, m, transRe)) { advance(); continue; }
 
         std::string name = m[1];
         std::string opts = trim(m[2].str());
 
+        // Parse optional canvas position from the header line
         double px = -1, py = -1;
         tryParsePos(opts, px, py);
 
-        Transition *t = m_net->addTransition(name,
+        Transition *t = net_->add_transition(name,
             (px >= 0 && py >= 0) ? QPointF(px, py) : QPointF(-1, -1));
         advance();
 
-        // Read sub-lines: in, out, when, do
-        // Use raw content of CURRENT line (not stale outer `raw`) to detect
-        // when we've left the indented block and hit the next transition header.
+        // Read indented sub-lines: in, out, when, do
         while (!atEnd()) {
             std::string rawSub = currentLine();
             std::string sub    = trim(stripComment(rawSub));
 
-            // Empty line means end of this transition's block
-            if (sub.empty()) { ++m_lineIdx; break; }
+            // Empty line terminates this transition's indented block
+            if (sub.empty()) { ++line_idx_; break; }
 
-            // Unindented line = next transition header or section header
+            // Unindented line = start of next transition or section
             if (!rawSub.empty() && rawSub[0] != ' ' && rawSub[0] != '\t')
                 break;
 
             if (sub.find("in:") == 0) {
+                // Parse comma-separated arc list "P1*w, P2"
                 std::string arcList = trim(sub.substr(3));
                 std::sregex_iterator it(arcList.begin(), arcList.end(), arcRe), end;
                 for (; it != end; ++it) {
-                    std::string pName  = (*it)[1];
+                    std::string pName = (*it)[1];
                     int weight = (*it)[2].matched ? std::stoi((*it)[2]) : 1;
-                    Place *p = m_net->findPlaceByName(pName);
+                    Place *p = net_->find_place_by_name(pName);
                     if (!p) { errorMsg = "Unknown place '" + pName + "' in transition '" + name + "'"; return false; }
-                    m_net->addArc(ArcType::INPUT, p->getId(), t->getId(), weight);
+                    net_->add_arc(ArcType::INPUT, p->id(), t->id(), weight);
                 }
                 advance();
 
@@ -325,27 +373,30 @@ bool PnFileParser::parseTransitions(std::string &errorMsg)
                 std::string arcList = trim(sub.substr(4));
                 std::sregex_iterator it(arcList.begin(), arcList.end(), arcRe), end;
                 for (; it != end; ++it) {
-                    std::string pName  = (*it)[1];
+                    std::string pName = (*it)[1];
                     int weight = (*it)[2].matched ? std::stoi((*it)[2]) : 1;
-                    Place *p = m_net->findPlaceByName(pName);
+                    Place *p = net_->find_place_by_name(pName);
                     if (!p) { errorMsg = "Unknown place '" + pName + "' in transition '" + name + "'"; return false; }
-                    m_net->addArc(ArcType::OUTPUT, p->getId(), t->getId(), weight);
+                    net_->add_arc(ArcType::OUTPUT, p->id(), t->id(), weight);
                 }
                 advance();
 
             } else if (sub.find("when:") == 0) {
+                // Parse "when: [event] [[guard]] [@ delay]"
                 std::string cond = trim(sub.substr(5));
-
-                // Extract event name (identifier before '[' or '@')
                 std::string event, guard, delay;
                 size_t i = 0;
+
+                // Skip leading spaces
                 while (i < cond.size() && cond[i] == ' ') ++i;
 
+                // Collect identifier before '[' or '@'
                 size_t start = i;
                 while (i < cond.size() && cond[i] != '[' && cond[i] != '@' && cond[i] != ' ')
                     ++i;
                 event = trim(cond.substr(start, i - start));
 
+                // Extract guard: [ ... ]
                 size_t lb = cond.find('[');
                 if (lb != std::string::npos) {
                     size_t rb = cond.rfind(']');
@@ -353,21 +404,23 @@ bool PnFileParser::parseTransitions(std::string &errorMsg)
                         guard = trim(cond.substr(lb + 1, rb - lb - 1));
                 }
 
+                // Extract delay after '@'
                 size_t at = cond.find('@');
                 if (at != std::string::npos)
                     delay = trim(cond.substr(at + 1));
 
-                t->setEventName(event);
-                t->setGuard(guard);
-                t->setDelayExpr(delay);
+                t->set_event_name(event);
+                t->set_guard(guard);
+                t->set_delay_expr(delay);
                 advance();
 
             } else if (sub.find("do:") == 0) {
+                // Read the action block { ... }
                 std::string rest = trim(sub.substr(3));
-                m_lines[m_lineIdx] = rest;
+                lines_[line_idx_] = rest;
                 std::string action;
                 if (!readBlock(action, errorMsg)) return false;
-                t->setAction(action);
+                t->set_action(action);
 
             } else {
                 advance();
@@ -377,13 +430,19 @@ bool PnFileParser::parseTransitions(std::string &errorMsg)
     return true;
 }
 
-// ---- Helpers ----
+///////////////////////////////////////////////////////////////////////////////
+// Helpers
 
+/**
+ * @brief Consumes a balanced { ... } block from the current read position.
+ *
+ * Handles multi-line blocks and nested braces.  Strips the outermost braces
+ * and trims whitespace from the captured content.
+ */
 bool PnFileParser::readBlock(std::string &block, std::string &errorMsg)
 {
-    // Reads { ... } block, handles multiline and nested braces
     block.clear();
-    int depth = 0;
+    int  depth   = 0;
     bool started = false;
 
     while (!atEnd()) {
@@ -392,10 +451,11 @@ bool PnFileParser::readBlock(std::string &block, std::string &errorMsg)
             if (c == '{') {
                 depth++;
                 started = true;
-                if (depth > 1) block += c;
+                if (depth > 1) block += c; // keep nested braces
             } else if (c == '}') {
                 depth--;
                 if (depth == 0) {
+                    // Closing brace of the outermost block — done
                     block = trim(block);
                     advance();
                     return true;
@@ -405,7 +465,7 @@ bool PnFileParser::readBlock(std::string &block, std::string &errorMsg)
                 block += c;
             }
         }
-        if (started) block += '\n';
+        if (started) block += '\n'; // preserve line breaks inside block
         advance();
     }
 
@@ -413,6 +473,9 @@ bool PnFileParser::readBlock(std::string &block, std::string &errorMsg)
     return false;
 }
 
+/**
+ * @brief Looks for "pos: x,y" in the string s and parses the coordinates.
+ */
 bool PnFileParser::tryParsePos(const std::string &s, double &x, double &y) const
 {
     auto pos = s.find("pos:");
@@ -429,50 +492,62 @@ bool PnFileParser::tryParsePos(const std::string &s, double &x, double &y) const
     }
 }
 
+/**
+ * @brief Assigns grid positions to all places and transitions with pos == (-1, -1).
+ *
+ * Places are laid out first, then transitions, each on their own grid rows
+ * with 4 columns and 150 px horizontal / 120 px vertical spacing.
+ */
 void PnFileParser::applyAutoLayout()
 {
-    // Assign grid positions to elements that have no explicit pos (pos == -1,-1)
     const double stepX = 150.0;
     const double stepY = 120.0;
-    const int cols = 4;
+    const int    cols  = 4;
 
     int idx = 0;
-    for (auto &p : m_net->getPlaces()) {
-        if (p->getPos().x() < 0) {
-            p->setPos(QPointF((idx % cols) * stepX + 80, (idx / cols) * stepY + 80));
+    for (auto &p : net_->places()) {
+        if (p->pos().x() < 0) {
+            p->set_pos(QPointF((idx % cols) * stepX + 80, (idx / cols) * stepY + 80));
             idx++;
         }
     }
 
     idx = 0;
-    for (auto &t : m_net->getTransitions()) {
-        if (t->getPos().x() < 0) {
-            t->setPos(QPointF((idx % cols) * stepX + 80, (idx / cols) * stepY + 240));
+    for (auto &t : net_->transitions()) {
+        if (t->pos().x() < 0) {
+            t->set_pos(QPointF((idx % cols) * stepX + 80, (idx / cols) * stepY + 240));
             idx++;
         }
     }
 }
 
+/** @brief Returns the line at the current read position without advancing. */
 std::string PnFileParser::currentLine() const
 {
-    return m_lines[m_lineIdx];
+    return lines_[line_idx_];
 }
 
+/** @brief Increments line_idx_ and returns false when past the last line. */
 bool PnFileParser::advance()
 {
-    if (m_lineIdx < (int)m_lines.size())
-        m_lineIdx++;
+    if (line_idx_ < (int)lines_.size())
+        line_idx_++;
     return !atEnd();
 }
 
+/** @brief Returns true when line_idx_ >= lines_.size(). */
 bool PnFileParser::atEnd() const
 {
-    return m_lineIdx >= (int)m_lines.size();
+    return line_idx_ >= (int)lines_.size();
 }
 
+/**
+ * @brief Removes a trailing '#' comment from a line.
+ *
+ * A '#' inside a double-quoted string is not treated as a comment start.
+ */
 std::string PnFileParser::stripComment(const std::string &line) const
 {
-    // Remove everything from '#' onward, but not inside strings
     bool inString = false;
     for (size_t i = 0; i < line.size(); i++) {
         if (line[i] == '"') inString = !inString;
@@ -482,6 +557,7 @@ std::string PnFileParser::stripComment(const std::string &line) const
     return line;
 }
 
+/** @brief Removes leading and trailing ASCII whitespace from s. */
 std::string PnFileParser::trim(const std::string &s) const
 {
     size_t start = s.find_first_not_of(" \t\r\n");

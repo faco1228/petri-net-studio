@@ -1,9 +1,18 @@
 /**
  * @file transition_dialog.cpp
- * @brief Implementation of TransitionDialog.
- * @author xfacka00 (xfacka00@stud.fit.vutbr.cz)
- * @author xlogin02 (xlogin02@stud.fit.vutbr.cz)
+ * @author Samuel Fačka (xfackas00)
+ * @author Arťom Hanzel (xhanzea00)
+ * @brief TransitionDialog implementation.
+ * @version 0.1
  * @date 2026-04
+ *
+ * @copyright Copyright (c) 2026
+ *
+ * What happens here:
+ *   1. Constructor builds a form with name / event / guard / delay / action fields
+ *   2. All fields are pre-filled from the constructor arguments
+ *   3. A hint label explains spontaneous firing and timed transitions
+ *   4. Accessors trim and return the field values
  */
 
 #include "transition_dialog.h"
@@ -15,6 +24,11 @@
 #include <QPlainTextEdit>
 #include <QLabel>
 
+///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * @brief constructs the dialog pre-filled with existing transition values
+ */
 TransitionDialog::TransitionDialog(const QString &name,
                                    const QString &eventName,
                                    const QString &guard,
@@ -53,7 +67,7 @@ TransitionDialog::TransitionDialog(const QString &name,
     form->addRow("Delay (ms / var):", m_delayEdit);
     form->addRow("Action (C code):", m_actionEdit);
 
-    // Short help label
+    // Short help label about spontaneous firing and timed transitions
     auto *hint = new QLabel(
         "<small>Leave Event empty for spontaneous firing. "
         "Use @ prefix in .pn for timed transitions.</small>", this);
@@ -70,8 +84,19 @@ TransitionDialog::TransitionDialog(const QString &name,
     layout->addWidget(buttons);
 }
 
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief returns the trimmed transition name */
 QString TransitionDialog::name()      const { return m_nameEdit->text().trimmed(); }
+
+/** @brief returns the trimmed input event name */
 QString TransitionDialog::eventName() const { return m_eventEdit->text().trimmed(); }
+
+/** @brief returns the trimmed C guard expression */
 QString TransitionDialog::guard()     const { return m_guardEdit->text().trimmed(); }
+
+/** @brief returns the trimmed delay expression */
 QString TransitionDialog::delayExpr() const { return m_delayEdit->text().trimmed(); }
+
+/** @brief returns the trimmed C action code */
 QString TransitionDialog::action()    const { return m_actionEdit->toPlainText().trimmed(); }
