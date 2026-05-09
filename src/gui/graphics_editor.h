@@ -146,6 +146,15 @@ public slots:
      */
     void clearMonitorHighlight();
 
+    /** @brief Refreshes the canvas place item with current model values (name, tokens). */
+    void refreshPlaceItem(int placeId);
+
+    /** @brief Refreshes the canvas transition item with current model values (name). */
+    void refreshTransitionItem(int transitionId);
+
+    /** @brief Refreshes the canvas arc item with current model values (weight). */
+    void refreshArcItem(int arcId);
+
 signals:
     /** @brief Emitted when a place item is selected (e.g. for the properties dock). */
     void placeSelected(int placeId);

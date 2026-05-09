@@ -148,6 +148,11 @@ void GraphicsEditor::reloadFromNet(PnNet *net)
         arc->setWeight(a->weight());
         m_scene->addItem(arc);
     }
+
+    // Scroll the view to show the loaded items
+    QRectF bounds = m_scene->itemsBoundingRect();
+    if (!bounds.isEmpty())
+        centerOn(bounds.center());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -602,5 +607,37 @@ void GraphicsEditor::clearMonitorHighlight()
     for (QGraphicsItem *item : m_scene->items()) {
         auto *pi = dynamic_cast<GraphicsPlaceItem*>(item);
         if (pi) pi->setMonitorHighlight(false);
+    }
+}
+
+void GraphicsEditor::refreshPlaceItem(int placeId)
+{
+    if (!m_controller) return;
+    const Place *p = m_controller->net()->find_place_by_id(placeId);
+    if (!p) return;
+    if (auto *item = findPlaceItem(placeId)) {
+        item->setPlaceName(QString::fromStdString(p->name()));
+        item->setTokenCount(p->initial_tokens());
+    }
+}
+
+void GraphicsEditor::refreshTransitionItem(int transitionId)
+{
+    if (!m_controller) return;
+    const Transition *t = m_controller->net()->find_transition_by_id(transitionId);
+    if (!t) return;
+    if (auto *item = findTransitionItem(transitionId)) {
+        item->setTransitionName(QString::fromStdString(t->name()));
+    }
+}
+
+void GraphicsEditor::refreshArcItem(int arcId)
+{
+    if (!m_controller) return;
+    const Arc *a = m_controller->net()->find_arc_by_id(arcId);
+    if (!a) return;
+    for (QGraphicsItem *item : m_scene->items()) {
+        auto *arc = dynamic_cast<GraphicsArcItem*>(item);
+        if (arc && arc->arcId() == arcId) { arc->setWeight(a->weight()); return; }
     }
 }

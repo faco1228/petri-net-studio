@@ -20,6 +20,7 @@
 
 #include <QPainter>
 #include <QGraphicsSceneMouseEvent>
+#include <algorithm>
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -69,8 +70,9 @@ QPointF GraphicsTransitionItem::centerPos() const
 /** @brief Returns the bounding rect extended to include the name label. */
 QRectF GraphicsTransitionItem::boundingRect() const
 {
-    return QRectF(-TRANSITION_W / 2, -TRANSITION_H / 2,
-                  TRANSITION_W, TRANSITION_H + 20);
+    // Label is drawn in a 80px-wide rect centred at x=0; ensure that's covered.
+    const double halfW = std::max(TRANSITION_W / 2.0, 40.0);
+    return QRectF(-halfW, -TRANSITION_H / 2, halfW * 2, TRANSITION_H + 20);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

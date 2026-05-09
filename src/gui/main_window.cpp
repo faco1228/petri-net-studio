@@ -121,6 +121,7 @@ void MainWindow::setupDocks()
     // Properties dock (right side)
     m_propertiesPanel = new PropertiesPanel(m_controller, this);
     m_propertiesDock  = new QDockWidget("Properties", this);
+    m_propertiesDock->setObjectName("PropertiesDock");
     m_propertiesDock->setWidget(m_propertiesPanel);
     m_propertiesDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     addDockWidget(Qt::RightDockWidgetArea, m_propertiesDock);
@@ -132,11 +133,18 @@ void MainWindow::setupDocks()
             m_propertiesPanel, &PropertiesPanel::showArc);
     connect(m_editor, &GraphicsEditor::selectionCleared,
             m_propertiesPanel, &PropertiesPanel::showEmpty);
+    connect(m_propertiesPanel, &PropertiesPanel::placeApplied,
+            m_editor, &GraphicsEditor::refreshPlaceItem);
+    connect(m_propertiesPanel, &PropertiesPanel::transitionApplied,
+            m_editor, &GraphicsEditor::refreshTransitionItem);
+    connect(m_propertiesPanel, &PropertiesPanel::arcApplied,
+            m_editor, &GraphicsEditor::refreshArcItem);
 
     // Event log dock (bottom)
     m_eventLog = new EventLogView(this);
     m_eventLog->connectController(m_controller);
     m_logDock  = new QDockWidget("Event Log", this);
+    m_logDock->setObjectName("EventLogDock");
     m_logDock->setWidget(m_eventLog);
     m_logDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
     addDockWidget(Qt::BottomDockWidgetArea, m_logDock);
@@ -144,6 +152,7 @@ void MainWindow::setupDocks()
     // Inject input dock (left side, only shown in Monitor tab)
     m_injectPanel = new InjectPanel(m_controller, this);
     m_injectDock  = new QDockWidget("Inject Input", this);
+    m_injectDock->setObjectName("InjectInputDock");
     m_injectDock->setWidget(m_injectPanel);
     m_injectDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     addDockWidget(Qt::LeftDockWidgetArea, m_injectDock);
@@ -185,6 +194,7 @@ void MainWindow::setupMenuBar()
 void MainWindow::setupToolBar()
 {
     QToolBar *tb = addToolBar("Main");
+    tb->setObjectName("MainToolBar");
     tb->addAction("New",             this, &MainWindow::onNewNet);
     tb->addAction("Open",            this, &MainWindow::onOpenNet);
     tb->addAction("Save",            this, &MainWindow::onSaveNet);

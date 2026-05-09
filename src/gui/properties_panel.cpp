@@ -184,6 +184,7 @@ void PropertiesPanel::applyPlace()
                         m_placeTokens->value(),
                         m_placeAction->toPlainText().trimmed().toStdString());
     showPlace(m_currentPlaceId);
+    emit placeApplied(m_currentPlaceId);
 }
 
 /** @brief Writes transition fields back to the model and refreshes the display. */
@@ -197,6 +198,7 @@ void PropertiesPanel::applyTransition()
                              m_transDelay->text().trimmed().toStdString(),
                              m_transAction->toPlainText().trimmed().toStdString());
     showTransition(m_currentTransitionId);
+    emit transitionApplied(m_currentTransitionId);
 }
 
 /** @brief Writes arc weight back to the model and refreshes the display. */
@@ -205,4 +207,5 @@ void PropertiesPanel::applyArc()
     if (m_currentArcId < 0 || !m_ctrl) return;
     m_ctrl->updateArcWeight(m_currentArcId, m_arcWeight->value());
     showArc(m_currentArcId);
+    emit arcApplied(m_currentArcId);
 }

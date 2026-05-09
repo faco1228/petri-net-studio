@@ -57,6 +57,14 @@ public slots:
     /** @brief Switches to the "no selection" page. */
     void showEmpty();
 
+signals:
+    /** @brief Emitted after a place edit is applied so the canvas item can refresh. */
+    void placeApplied(int placeId);
+    /** @brief Emitted after a transition edit is applied so the canvas item can refresh. */
+    void transitionApplied(int transitionId);
+    /** @brief Emitted after an arc edit is applied so the canvas item can refresh. */
+    void arcApplied(int arcId);
+
 private slots:
     void applyPlace();
     void applyTransition();
