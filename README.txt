@@ -199,3 +199,10 @@ Závislosti:
   Doxyfile                — konfigurácia Doxygen
   Makefile                — hlavný Makefile
   README.txt              — tento súbor
+
+
+Poznámka k použitiu AI
+-----------------------
+Pri vývoji bol použitý nástroj Claude (Anthropic) ako asistent — na generovanie
+kostry komentárov (Doxygen), návrh štruktúry tried, ladenie edge-case bugov
+a code review.
