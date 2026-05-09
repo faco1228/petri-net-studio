@@ -1092,8 +1092,8 @@ make run
 - [x] `TransitionDialog` — dialóg (meno, event, guard, delay, akcia)
 - [x] `ArcDialog` — dialóg (váha)
 - [x] `NewNetDialog` — dialóg (meno, komentár)
-- [ ] `PropertiesPanel` — inline dock editácia (stub)
-- [ ] `VariablesDialog` — dialóg (vstupy, výstupy, premenné) (stub)
+- [x] `PropertiesPanel` — inline dock editácia (implementované: QStackedWidget, place/transition/arc stránky, Apply tlačidlá)
+- [x] `VariablesDialog` — dialóg (vstupy, výstupy, premenné) (implementované: 3 záložky, QListWidget + QTableWidget, add/remove sloty)
 
 ### GUI — Monitor (src/gui/)
 - [x] `MonitorPanel` — live tabuľka tokenov + enabled prechody

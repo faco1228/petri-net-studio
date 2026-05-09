@@ -153,6 +153,9 @@ signals:
     /** @brief Emitted when a transition item is selected. */
     void transitionSelected(int transitionId);
 
+    /** @brief Emitted when an arc item is selected. */
+    void arcSelected(int arcId);
+
     /** @brief Emitted when the selection is cleared. */
     void selectionCleared();
 

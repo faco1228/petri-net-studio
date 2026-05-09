@@ -53,6 +53,17 @@ GraphicsEditor::GraphicsEditor(AppController *controller, QWidget *parent)
     setDragMode(QGraphicsView::NoDrag);
     setSceneRect(-2000, -2000, 4000, 4000); // large canvas
     setBackgroundBrush(QColor(245, 245, 245));
+
+    connect(m_scene, &QGraphicsScene::selectionChanged, this, [this]() {
+        const auto sel = m_scene->selectedItems();
+        if (sel.isEmpty()) { emit selectionCleared(); return; }
+        for (QGraphicsItem* item : sel) {
+            if (auto* pi = dynamic_cast<GraphicsPlaceItem*>(item))
+                { emit placeSelected(pi->placeId()); return; }
+            if (auto* ti = dynamic_cast<GraphicsTransitionItem*>(item))
+                { emit transitionSelected(ti->transitionId()); return; }
+        }
+    });
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -225,6 +236,7 @@ void GraphicsEditor::openArcDialog(int arcId)
     if (!m_controller) return;
     Arc *a = m_controller->net()->find_arc_by_id(arcId);
     if (!a) return;
+    emit arcSelected(arcId);
 
     ArcDialog dlg(a->weight(), this);
     if (dlg.exec() != QDialog::Accepted) return;

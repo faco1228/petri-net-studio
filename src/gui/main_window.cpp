@@ -119,11 +119,19 @@ void MainWindow::setupCentralWidget()
 void MainWindow::setupDocks()
 {
     // Properties dock (right side)
-    m_propertiesPanel = new PropertiesPanel(this);
+    m_propertiesPanel = new PropertiesPanel(m_controller, this);
     m_propertiesDock  = new QDockWidget("Properties", this);
     m_propertiesDock->setWidget(m_propertiesPanel);
     m_propertiesDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     addDockWidget(Qt::RightDockWidgetArea, m_propertiesDock);
+    connect(m_editor, &GraphicsEditor::placeSelected,
+            m_propertiesPanel, &PropertiesPanel::showPlace);
+    connect(m_editor, &GraphicsEditor::transitionSelected,
+            m_propertiesPanel, &PropertiesPanel::showTransition);
+    connect(m_editor, &GraphicsEditor::arcSelected,
+            m_propertiesPanel, &PropertiesPanel::showArc);
+    connect(m_editor, &GraphicsEditor::selectionCleared,
+            m_propertiesPanel, &PropertiesPanel::showEmpty);
 
     // Event log dock (bottom)
     m_eventLog = new EventLogView(this);
