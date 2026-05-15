@@ -109,14 +109,31 @@ void GraphicsPlaceItem::paint(QPainter *painter,
     painter->setPen(isSelected() ? QPen(Qt::blue, 2) : QPen(Qt::black, 1.5));
     painter->drawEllipse(QRectF(-PLACE_RADIUS, -PLACE_RADIUS, PLACE_RADIUS * 2, PLACE_RADIUS * 2));
 
-    // Show live count in monitor mode, initial count otherwise
+    // Show tokens: dots for 1-5, number for 6+, nothing for 0
     int displayTokens = m_monitorActive ? m_liveTokens : m_tokens;
-    painter->setPen(Qt::black);
-    painter->setFont(QFont("Sans", 10, QFont::Bold));
-    painter->drawText(QRectF(-PLACE_RADIUS, -PLACE_RADIUS, PLACE_RADIUS * 2, PLACE_RADIUS * 2),
-                      Qt::AlignCenter, QString::number(displayTokens));
+    painter->setPen(Qt::NoPen);
+    painter->setBrush(Qt::black);
+    if (displayTokens >= 1 && displayTokens <= 5) {
+        // Dot layout: positions for 1..5 tokens inside the circle
+        static const QPointF dots[5][5] = {
+            {{ 0,  0}, {0,0}, {0,0}, {0,0}, {0,0}},           // 1
+            {{-7,  0}, {7,0}, {0,0}, {0,0}, {0,0}},           // 2
+            {{-7,  5}, {7,5}, {0,-7},{0,0}, {0,0}},           // 3
+            {{-7, -6}, {7,-6},{-7,6},{7,6}, {0,0}},           // 4
+            {{-7, -6}, {7,-6},{ 0,0},{-7,6},{7,6}},           // 5
+        };
+        for (int i = 0; i < displayTokens; i++)
+            painter->drawEllipse(dots[displayTokens-1][i], 4.0, 4.0);
+    } else if (displayTokens > 5) {
+        painter->setPen(Qt::black);
+        painter->setBrush(Qt::NoBrush);
+        painter->setFont(QFont("Sans", 10, QFont::Bold));
+        painter->drawText(QRectF(-PLACE_RADIUS, -PLACE_RADIUS, PLACE_RADIUS * 2, PLACE_RADIUS * 2),
+                          Qt::AlignCenter, QString::number(displayTokens));
+    }
 
     // Name label below the circle
+    painter->setPen(Qt::black);
     painter->setFont(QFont("Sans", 9));
     painter->drawText(QRectF(-40, PLACE_RADIUS + 2, 80, 16),
                       Qt::AlignCenter, m_name);

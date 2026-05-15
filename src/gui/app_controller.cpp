@@ -298,17 +298,29 @@ void AppController::generateAndRun()
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/** @brief Sends STEP via UDP so the interpreter fires one maximal transition set. */
+void AppController::stepInterpreter()
+{
+    if (isInterpreterRunning())
+        m_udpClient->sendStep(7000);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 /** @brief Sends QUIT via UDP, waits 1 s for graceful exit, then kills the process. */
 void AppController::stopInterpreter()
 {
     if (m_process && m_process->state() != QProcess::NotRunning) {
-        // Politely ask the interpreter to stop first
+        // Claim ownership of the stop sequence so onProcessFinished() skips its cleanup
+        m_handledStop = true;
         m_udpClient->sendQuit(m_net ? m_net->name() : "", 7000);
+        // waitForFinished processes Qt events — onProcessFinished may fire here
         m_process->waitForFinished(1000);
         if (m_process->state() != QProcess::NotRunning)
-            m_process->kill(); // force kill if it did not respond
+            m_process->kill();
     }
     m_udpClient->stop();
+    m_handledStop = false;
     emit interpreterStopped();
 }
 
@@ -318,6 +330,8 @@ void AppController::stopInterpreter()
 void AppController::onProcessFinished(int exitCode, QProcess::ExitStatus)
 {
     emit compileOutput("Interpreter exited (code " + QString::number(exitCode) + ").");
+    // If stopInterpreter() owns this stop sequence it already called stop()/interpreterStopped()
+    if (m_handledStop) return;
     m_udpClient->stop();
     emit interpreterStopped();
 }

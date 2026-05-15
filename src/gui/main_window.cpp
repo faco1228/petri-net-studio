@@ -45,20 +45,24 @@
 /** @brief Constructs and fully initialises the main window. */
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , m_tabs(nullptr)
     , m_editor(nullptr)
     , m_monitorPanel(nullptr)
-    , m_propertiesDock(nullptr)
-    , m_propertiesPanel(nullptr)
-    , m_logDock(nullptr)
-    , m_eventLog(nullptr)
-    , m_controller(nullptr)
-    , m_injectPanel(nullptr)
     , m_modeGroup(nullptr)
     , m_actSelect(nullptr)
     , m_actAddPlace(nullptr)
     , m_actAddTransition(nullptr)
     , m_actAddArc(nullptr)
+    , m_actRun(nullptr)
+    , m_actStop(nullptr)
+    , m_actStep(nullptr)
+    , m_actAuto(nullptr)
+    , m_autoTimer(nullptr)
+    , m_propertiesDock(nullptr)
+    , m_propertiesPanel(nullptr)
+    , m_logDock(nullptr)
+    , m_eventLog(nullptr)
+    , m_injectPanel(nullptr)
+    , m_controller(nullptr)
 {
     setWindowTitle("ICP Petri Net Editor");
     resize(1280, 800);
@@ -81,36 +85,35 @@ MainWindow::~MainWindow() {}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/** @brief Creates the central QTabWidget containing the Editor and Monitor tabs. */
+/** @brief Sets GraphicsEditor as the central widget and wires all controller signals. */
 void MainWindow::setupCentralWidget()
 {
-    m_tabs = new QTabWidget(this);
-
     m_editor       = new GraphicsEditor(m_controller, this);
     m_monitorPanel = new MonitorPanel(m_controller, this);
 
-    m_tabs->addTab(m_editor,       "Editor");
-    m_tabs->addTab(m_monitorPanel, "Monitor");
-
-    connect(m_tabs, &QTabWidget::currentChanged, this, &MainWindow::onTabChanged);
+    // Editor is the only central widget — always visible
+    setCentralWidget(m_editor);
 
     // Reload the editor scene whenever a net is opened from disk
-    connect(m_controller, &AppController::netLoaded,
-            this, &MainWindow::onNetLoaded);
+    connect(m_controller, &AppController::netLoaded,   this, &MainWindow::onNetLoaded);
 
-    // Live token counts: forward STATE datagrams to place items in the editor
+    // Live token/transition colours in diagram
     connect(m_controller->udpClient(), &UdpClient::stateReceived,
             m_editor, &GraphicsEditor::onStateUpdated);
 
-    // Clear monitor highlight when interpreter stops
+    // Clear highlight when interpreter stops
     connect(m_controller, &AppController::interpreterStopped,
             m_editor, &GraphicsEditor::clearMonitorHighlight);
 
-    // ANNOUNCE reconnect: wire UdpClient signal so GUI can discover a running net at startup
+    // Toolbar button state
+    connect(m_controller, &AppController::interpreterStarted,
+            this, &MainWindow::onInterpreterStarted);
+    connect(m_controller, &AppController::interpreterStopped,
+            this, &MainWindow::onInterpreterStopped);
+
+    // ANNOUNCE reconnect
     connect(m_controller->udpClient(), &UdpClient::announceReceived,
             this, &MainWindow::onAnnounceReceived);
-
-    setCentralWidget(m_tabs);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -149,13 +152,22 @@ void MainWindow::setupDocks()
     m_logDock->setAllowedAreas(Qt::BottomDockWidgetArea | Qt::TopDockWidgetArea);
     addDockWidget(Qt::BottomDockWidgetArea, m_logDock);
 
-    // Inject input dock (left side, only shown in Monitor tab)
+    // Inject input dock (left side — shown only when interpreter is running)
     m_injectPanel = new InjectPanel(m_controller, this);
     m_injectDock  = new QDockWidget("Inject Input", this);
     m_injectDock->setObjectName("InjectInputDock");
     m_injectDock->setWidget(m_injectPanel);
     m_injectDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
     addDockWidget(Qt::LeftDockWidgetArea, m_injectDock);
+    m_injectDock->hide();
+
+    // Monitor dock (right side — shown only when interpreter is running)
+    m_monitorDock = new QDockWidget("Monitor", this);
+    m_monitorDock->setObjectName("MonitorDock");
+    m_monitorDock->setWidget(m_monitorPanel);
+    m_monitorDock->setAllowedAreas(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea);
+    addDockWidget(Qt::RightDockWidgetArea, m_monitorDock);
+    m_monitorDock->hide();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -164,23 +176,25 @@ void MainWindow::setupDocks()
 void MainWindow::setupMenuBar()
 {
     QMenu *fileMenu = menuBar()->addMenu("&File");
-    fileMenu->addAction("&New",        this, &MainWindow::onNewNet,     QKeySequence::New);
-    fileMenu->addAction("&Open...",    this, &MainWindow::onOpenNet,    QKeySequence::Open);
+    fileMenu->addAction("&New",        QKeySequence::New,  this, &MainWindow::onNewNet);
+    fileMenu->addAction("&Open...",    QKeySequence::Open, this, &MainWindow::onOpenNet);
     fileMenu->addSeparator();
-    fileMenu->addAction("&Save",             this, &MainWindow::onSaveNet,        QKeySequence::Save);
-    fileMenu->addAction("Save &As...",       this, &MainWindow::onSaveNetAs);
+    fileMenu->addAction("&Save",              QKeySequence::Save, this, &MainWindow::onSaveNet);
+    fileMenu->addAction("Save &As...",        this, &MainWindow::onSaveNetAs);
     fileMenu->addSeparator();
     fileMenu->addAction("Net &Properties...", this, &MainWindow::onNetProperties);
     fileMenu->addSeparator();
-    fileMenu->addAction("&Quit",             this, &QWidget::close, QKeySequence::Quit);
+    fileMenu->addAction("&Quit",              QKeySequence::Quit, this, &QWidget::close);
 
     QMenu *runMenu = menuBar()->addMenu("&Run");
-    runMenu->addAction("&Generate && Run", this, &MainWindow::onGenerateAndRun,  QKeySequence("F5"));
-    runMenu->addAction("&Stop",            this, &MainWindow::onStopInterpreter, QKeySequence("F6"));
+    runMenu->addAction("&Run",  QKeySequence("F5"), this, &MainWindow::onGenerateAndRun);
+    runMenu->addAction("&Stop", QKeySequence("F6"), this, &MainWindow::onStopInterpreter);
+    runMenu->addAction("S&tep", QKeySequence("F7"), this, &MainWindow::onStepInterpreter);
 
     // View menu lets the user toggle dock visibility
     QMenu *viewMenu = menuBar()->addMenu("&View");
     viewMenu->addAction(m_propertiesDock->toggleViewAction());
+    viewMenu->addAction(m_monitorDock->toggleViewAction());
     viewMenu->addAction(m_logDock->toggleViewAction());
     viewMenu->addAction(m_injectDock->toggleViewAction());
 
@@ -195,12 +209,32 @@ void MainWindow::setupToolBar()
 {
     QToolBar *tb = addToolBar("Main");
     tb->setObjectName("MainToolBar");
-    tb->addAction("New",             this, &MainWindow::onNewNet);
-    tb->addAction("Open",            this, &MainWindow::onOpenNet);
-    tb->addAction("Save",            this, &MainWindow::onSaveNet);
+    tb->addAction("New",  this, &MainWindow::onNewNet);
+    tb->addAction("Open", this, &MainWindow::onOpenNet);
+    tb->addAction("Save", this, &MainWindow::onSaveNet);
     tb->addSeparator();
-    tb->addAction("Generate && Run", this, &MainWindow::onGenerateAndRun);
-    tb->addAction("Stop",            this, &MainWindow::onStopInterpreter);
+
+    // Interpreter control buttons
+    m_actRun  = new QAction("▶ Run",  this);
+    m_actStop = new QAction("■ Stop", this);
+    m_actStep = new QAction("⏭ Step", this);
+    m_actAuto = new QAction("▶▶ Auto", this);
+    m_actAuto->setCheckable(true);
+    m_actStop->setEnabled(false);
+    m_actStep->setEnabled(false);
+    m_actAuto->setEnabled(false);
+    connect(m_actRun,  &QAction::triggered, this, &MainWindow::onGenerateAndRun);
+    connect(m_actStop, &QAction::triggered, this, &MainWindow::onStopInterpreter);
+    connect(m_actStep, &QAction::triggered, this, &MainWindow::onStepInterpreter);
+    connect(m_actAuto, &QAction::triggered, this, &MainWindow::onToggleAuto);
+    tb->addAction(m_actRun);
+    tb->addAction(m_actStop);
+    tb->addAction(m_actStep);
+    tb->addAction(m_actAuto);
+
+    m_autoTimer = new QTimer(this);
+    m_autoTimer->setInterval(200);
+    connect(m_autoTimer, &QTimer::timeout, this, &MainWindow::onStepInterpreter);
     tb->addSeparator();
 
     // Exclusive editor mode buttons (behave like a radio group)
@@ -296,11 +330,10 @@ void MainWindow::onSaveNetAs()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/** @brief Triggers code generation and compilation, then switches to the Monitor tab. */
+/** @brief Triggers code generation and compilation; diagram stays visible. */
 void MainWindow::onGenerateAndRun()
 {
     m_controller->generateAndRun();
-    m_tabs->setCurrentIndex(1); // switch to Monitor tab automatically
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -309,6 +342,56 @@ void MainWindow::onGenerateAndRun()
 void MainWindow::onStopInterpreter()
 {
     m_controller->stopInterpreter();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief Fires one step in the interpreter. */
+void MainWindow::onStepInterpreter()
+{
+    m_controller->stepInterpreter();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief Shows monitor/inject docks and updates button states when interpreter starts. */
+void MainWindow::onInterpreterStarted()
+{
+    m_actRun->setEnabled(false);
+    m_actStop->setEnabled(true);
+    m_actStep->setEnabled(true);
+    m_actAuto->setEnabled(true);
+    m_monitorDock->show();
+    m_injectDock->show();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief Hides monitor/inject docks and updates button states when interpreter stops. */
+void MainWindow::onInterpreterStopped()
+{
+    m_autoTimer->stop();
+    m_actAuto->setChecked(false);
+    m_actRun->setEnabled(true);
+    m_actStop->setEnabled(false);
+    m_actStep->setEnabled(false);
+    m_actAuto->setEnabled(false);
+    m_monitorDock->hide();
+    m_injectDock->hide();
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+/** @brief Toggles continuous auto-stepping on/off. */
+void MainWindow::onToggleAuto()
+{
+    if (m_actAuto->isChecked()) {
+        m_actStep->setEnabled(false);
+        m_autoTimer->start();
+    } else {
+        m_autoTimer->stop();
+        m_actStep->setEnabled(true);
+    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -349,20 +432,6 @@ void MainWindow::onAbout()
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/** @brief Shows/hides docks and toolbar buttons depending on the active tab. */
-void MainWindow::onTabChanged(int index)
-{
-    // Properties dock is only useful in the editor tab
-    m_propertiesDock->setVisible(index == 0);
-    // Inject dock is only useful in the monitor tab
-    m_injectDock->setVisible(index == 1);
-    // Editor mode buttons make no sense in the monitor tab
-    for (QAction *a : {m_actSelect, m_actAddPlace, m_actAddTransition, m_actAddArc})
-        a->setEnabled(index == 0);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 /** @brief Translates the triggered toolbar action into an EditorMode change. */
 void MainWindow::onModeActionTriggered(QAction *action)
 {
@@ -392,18 +461,15 @@ void MainWindow::restoreWindowGeometry()
     QSettings settings("ICP", "PetriNetEditor");
     if (settings.contains("geometry"))
         restoreGeometry(settings.value("geometry").toByteArray());
-    // Always show properties dock and hide inject dock on startup
     m_propertiesDock->show();
-    m_injectDock->hide(); // only visible in the Monitor tab
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 
-/** @brief Reloads the editor scene from the newly loaded net and switches to Editor tab. */
+/** @brief Reloads the editor scene from the newly loaded net. */
 void MainWindow::onNetLoaded()
 {
     m_editor->reloadFromNet(m_controller->net());
-    m_tabs->setCurrentIndex(0); // bring the editor into view
     updateTitle();
 }
 
@@ -450,9 +516,8 @@ void MainWindow::onAnnounceReceived(const AnnounceMsg &msg)
     QString netName  = QString::fromStdString(msg.net_name);
     QString fileName = netName + ".pn";
 
-    // If the matching net is already loaded, just switch to Monitor
+    // If the matching net is already loaded, just show a status message
     if (m_controller->net() && m_controller->net()->name() == msg.net_name) {
-        m_tabs->setCurrentIndex(1);
         statusBar()->showMessage(tr("Connected to running net '%1'.").arg(netName), 4000);
         return;
     }
@@ -469,7 +534,6 @@ void MainWindow::onAnnounceReceived(const AnnounceMsg &msg)
     for (const QString &path : candidates) {
         if (QFile::exists(path)) {
             if (m_controller->loadNet(path.toStdString())) {
-                m_tabs->setCurrentIndex(1);
                 statusBar()->showMessage(
                     tr("Auto-connected to running net '%1'.").arg(netName), 4000);
             }

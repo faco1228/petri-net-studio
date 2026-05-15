@@ -71,6 +71,13 @@ public:
      */
     void sendQuit(const std::string& netName, quint16 interpreterPort = 7000);
 
+    /**
+     * @brief Sends a STEP datagram telling the interpreter to fire one transition set.
+     *
+     * @param interpreterPort destination port (default UDP_PORT_INTERPRETER = 7000)
+     */
+    void sendStep(quint16 interpreterPort = 7000);
+
 signals:
     /** @brief Emitted when a STATE datagram is received from the interpreter. */
     void stateReceived(const StateMsg& msg);

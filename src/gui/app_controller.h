@@ -204,6 +204,13 @@ public:
      */
     void stopInterpreter();
 
+    /**
+     * @brief Sends a STEP UDP message to fire one maximal transition set.
+     *
+     * Only has effect when the interpreter is running.
+     */
+    void stepInterpreter();
+
     // ---- Accessors ----
 
     /**
@@ -266,6 +273,7 @@ private:
     UdpClient* m_udpClient = nullptr; ///< UDP communication channel
     QString    m_genDir;              ///< directory where generated files are written
     QString    m_binaryPath;          ///< path to the compiled interpreter binary
+    bool       m_handledStop = false; ///< true while stopInterpreter() owns the stop sequence
 };
 
 #endif // APP_CONTROLLER_H

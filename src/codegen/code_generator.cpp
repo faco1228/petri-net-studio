@@ -226,6 +226,7 @@ struct Runtime {
                 }
             } else if(!en && was) {
                 trans_became_enabled[tid]=0;
+                pending_timer_ids.erase(tid);
             }
         }
     }
@@ -256,8 +257,17 @@ struct Runtime {
                 input_values[p[2]]=p[3];
                 pending_events.insert(p[2]);
                 send_log("INPUT_RECEIVED",p[2]+"="+p[3]);
+                // Fire event-triggered transitions immediately after input
+                auto sfs=maximal_fire_set(); for(int t:sfs) fire(t);
+                update_timers();
+                send_state();
             } else if(p[0]=="QUIT"){
                 send_log("QUIT",""); close(sock); exit(0);
+            } else if(p[0]=="STEP"){
+                // Fire exactly one maximal set — no stabilisation loop
+                auto sfs=maximal_fire_set(); for(int t:sfs) fire(t);
+                update_timers();
+                send_state();
             }
         }
     }
@@ -275,6 +285,7 @@ static Runtime g_rt;
 inline std::string valueof(const std::string& n)              { return g_rt.valueof(n); }
 inline bool         defined(const std::string& n)              { return g_rt.defined_input(n); }
 inline void         output(const std::string& n, int64_t v)   { g_rt.rt_output(n,v); }
+inline void         output(const std::string& n, int v)       { g_rt.rt_output(n,(int64_t)v); }
 inline void         output(const std::string& n, const std::string& v) { g_rt.rt_output_str(n,v); }
 inline void         output(const std::string& n, const char* v){ g_rt.rt_output_str(n,v); }
 inline int64_t      tokens(const std::string& n)               { return g_rt.tokens_of(n); }
@@ -297,16 +308,9 @@ int main(int argc, char* argv[]) {
     while (true) {
         g_rt.check_incoming();
         g_rt.update_timers();
-        g_rt.check_timers();
-        // Stabilization: keep firing immediate transitions until none remain (micro-steps)
-        std::vector<int> fs;
-        do {
-            fs = g_rt.maximal_fire_set();
-            for (int tid : fs) g_rt.fire(tid);
-        } while (!fs.empty());
-        g_rt.update_timers(); // re-schedule delayed transitions after stabilization
+        g_rt.check_timers();  // timers still fire automatically
         int64_t now_t = g_rt.now_ms();
-        if (g_rt.state_dirty || (now_t - g_rt.last_state_ms > 200))
+        if (g_rt.state_dirty && (now_t - g_rt.last_state_ms >= 100))
             g_rt.send_state();
         std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }

@@ -81,10 +81,12 @@ void GraphicsEditor::setMode(EditorMode mode)
 
     m_mode = mode;
 
-    // Items are only draggable in Select mode to avoid accidental moves
+    // Only nodes (places/transitions) are draggable in Select mode — arcs follow their nodes
     bool movable = (mode == EditorMode::Select);
-    for (QGraphicsItem *item : m_scene->items())
-        item->setFlag(QGraphicsItem::ItemIsMovable, movable);
+    for (QGraphicsItem *item : m_scene->items()) {
+        if (!dynamic_cast<GraphicsArcItem*>(item))
+            item->setFlag(QGraphicsItem::ItemIsMovable, movable);
+    }
 
     setDragMode(mode == EditorMode::Select
                 ? QGraphicsView::RubberBandDrag
@@ -568,7 +570,7 @@ GraphicsTransitionItem* GraphicsEditor::findTransitionItem(int id) const
  */
 void GraphicsEditor::onStateUpdated(const StateMsg &msg)
 {
-    // Parse marking_json: {"P1":2,"P2":0} into a name->count map
+    // --- Update place token counts ---
     std::map<std::string, int> tokenMap;
     std::string json = msg.marking_json;
     if (!json.empty() && json.front() == '{') json = json.substr(1);
@@ -580,7 +582,6 @@ void GraphicsEditor::onStateUpdated(const StateMsg &msg)
         auto colon = pair.rfind(':');
         if (colon == std::string::npos) continue;
         std::string name = pair.substr(0, colon);
-        // Strip surrounding quotes from the key
         if (name.size() >= 2 && name.front() == '"') name = name.substr(1, name.size() - 2);
         try { tokenMap[name] = std::stoi(pair.substr(colon + 1)); } catch (...) {}
     }
@@ -591,6 +592,36 @@ void GraphicsEditor::onStateUpdated(const StateMsg &msg)
         auto it = tokenMap.find(pi->placeName().toStdString());
         if (it != tokenMap.end())
             pi->setMonitorHighlight(true, it->second);
+    }
+
+    // --- Update transition colours (enabled = green, pending timer = orange) ---
+    // First reset all transitions
+    for (QGraphicsItem *item : m_scene->items()) {
+        auto *ti = dynamic_cast<GraphicsTransitionItem*>(item);
+        if (ti) { ti->setEnabled(false); ti->setPending(false); }
+    }
+
+    // Mark enabled transitions (green)
+    std::istringstream ess(msg.enabled_list);
+    std::string tname;
+    while (std::getline(ess, tname, ',')) {
+        if (tname.empty()) continue;
+        for (QGraphicsItem *item : m_scene->items()) {
+            auto *ti = dynamic_cast<GraphicsTransitionItem*>(item);
+            if (ti && ti->transitionName().toStdString() == tname)
+                ti->setEnabled(true);
+        }
+    }
+
+    // Mark pending-timer transitions (orange, overrides green)
+    std::istringstream pss(msg.pending_list);
+    while (std::getline(pss, tname, ',')) {
+        if (tname.empty()) continue;
+        for (QGraphicsItem *item : m_scene->items()) {
+            auto *ti = dynamic_cast<GraphicsTransitionItem*>(item);
+            if (ti && ti->transitionName().toStdString() == tname)
+                ti->setPending(true);
+        }
     }
 }
 
@@ -605,8 +636,12 @@ void GraphicsEditor::onStateUpdated(const StateMsg &msg)
 void GraphicsEditor::clearMonitorHighlight()
 {
     for (QGraphicsItem *item : m_scene->items()) {
-        auto *pi = dynamic_cast<GraphicsPlaceItem*>(item);
-        if (pi) pi->setMonitorHighlight(false);
+        if (auto *pi = dynamic_cast<GraphicsPlaceItem*>(item))
+            pi->setMonitorHighlight(false);
+        if (auto *ti = dynamic_cast<GraphicsTransitionItem*>(item)) {
+            ti->setEnabled(false);
+            ti->setPending(false);
+        }
     }
 }
 

@@ -1,0 +1,54 @@
+Meno siete:
+    producer_consumer
+
+Komentár:
+    Bounded-buffer producer-consumer (buffer capacity = 3).
+    No events needed — use Step to advance manually.
+
+    Producer cycle: prod_idle -> T_start_produce -> prod_busy -> T_finish_produce -> prod_idle
+    Consumer cycle: cons_idle -> T_start_consume -> cons_busy -> T_finish_consume -> cons_idle
+    Shared:         buffer (items), free (empty slots)
+
+    Interesting states to observe:
+      - Buffer fills up (free=0): only consumer can run
+      - Buffer empty (buffer=0): only producer can run
+      - Both running concurrently when buffer has 1-2 items
+
+Vstupy:
+
+Výstupy:
+
+Premenné:
+
+Miesta (počiatočné tokeny, voliteľne akcie):
+    prod_idle  (1) pos: 100,100
+    prod_busy  (0) pos: 400,100
+    buffer     (0) pos: 400,280
+    free       (3) pos: 100,280
+    cons_idle  (1) pos: 100,460
+    cons_busy  (0) pos: 400,460
+
+Prechody a ich podmienky:
+T_start_produce pos: 250,100 :
+    in:  prod_idle*1 free*1
+    out: prod_busy*1
+    when:
+    do: {  }
+
+T_finish_produce pos: 550,190 :
+    in:  prod_busy*1
+    out: prod_idle*1 buffer*1
+    when:
+    do: {  }
+
+T_start_consume pos: 550,370 :
+    in:  cons_idle*1 buffer*1
+    out: cons_busy*1
+    when:
+    do: {  }
+
+T_finish_consume pos: 250,460 :
+    in:  cons_busy*1
+    out: cons_idle*1 free*1
+    when:
+    do: {  }

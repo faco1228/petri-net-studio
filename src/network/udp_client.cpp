@@ -75,6 +75,17 @@ void UdpClient::sendQuit(const std::string& netName, quint16 interpreterPort)
 
 ///////////////////////////////////////////////////////////////////////////////
 
+/** @brief Sends a STEP datagram telling the interpreter to fire one transition set. */
+void UdpClient::sendStep(quint16 interpreterPort)
+{
+    if (!m_socket) return;
+    std::string msg = "STEP\n";
+    m_socket->writeDatagram(msg.c_str(), (qint64)msg.size(),
+                            QHostAddress::LocalHost, interpreterPort);
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 /**
  * @brief Reads all pending datagrams and emits the appropriate typed signal.
  *

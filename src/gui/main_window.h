@@ -22,6 +22,7 @@
 #include <QTabWidget>
 #include <QDockWidget>
 #include <QActionGroup>
+#include <QTimer>
 #include "graphics_editor.h"
 #include "../inc/udp_protocol.h"
 
@@ -59,48 +60,22 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private slots:
-    /** @brief Slot: opens the New Net dialog and creates a fresh net. */
     void onNewNet();
-
-    /** @brief Slot: shows a file-open dialog and loads the chosen .pn file. */
     void onOpenNet();
-
-    /** @brief Slot: saves the current net to its existing path. */
     void onSaveNet();
-
-    /** @brief Slot: shows a file-save dialog and saves to a new path. */
     void onSaveNetAs();
-
-    /** @brief Slot: triggers code generation, compilation and interpreter launch. */
     void onGenerateAndRun();
-
-    /** @brief Slot: stops the running interpreter. */
     void onStopInterpreter();
-
-    /** @brief Slot: shows the About dialog. */
+    void onStepInterpreter();
+    void onToggleAuto();
     void onAbout();
-
-    /** @brief Slot: opens the Net Properties (inputs/outputs/variables) dialog. */
     void onNetProperties();
-
-    /** @brief Slot: updates dock visibility when the active tab changes. */
-    void onTabChanged(int index);
-
-    /** @brief Slot: synchronises the editor mode with the toolbar action group. */
     void onModeActionTriggered(QAction *action);
-
-    /** @brief Slot: reloads the editor scene and switches to the Editor tab after load. */
     void onNetLoaded();
-
-    /**
-     * @brief Slot: called when a running interpreter sends an ANNOUNCE datagram.
-     *
-     * Tries to auto-load the matching .pn file and switch to Monitor mode.
-     * If the file cannot be located, shows a status-bar notification.
-     *
-     * @param msg the ANNOUNCE message containing the net name and port
-     */
     void onAnnounceReceived(const AnnounceMsg &msg);
+    /** @brief Updates Run/Stop/Step button states when interpreter starts or stops. */
+    void onInterpreterStarted();
+    void onInterpreterStopped();
 
 private:
     /** @brief Builds the menu bar (File, Run, View, Help). */
@@ -124,23 +99,29 @@ private:
     /** @brief Updates the window title to reflect the current file path. */
     void updateTitle();
 
-    QTabWidget    *m_tabs;         ///< central tab widget (Editor / Monitor)
-    GraphicsEditor *m_editor;      ///< canvas-based Petri net editor
-    MonitorPanel   *m_monitorPanel; ///< live token-count view
+    GraphicsEditor *m_editor;      ///< canvas-based Petri net editor (central widget)
+    MonitorPanel   *m_monitorPanel; ///< live token/transition state sidebar
 
     QActionGroup *m_modeGroup;         ///< exclusive group for editor mode buttons
     QAction      *m_actSelect;         ///< Select mode toolbar button
     QAction      *m_actAddPlace;       ///< Add Place mode toolbar button
     QAction      *m_actAddTransition;  ///< Add Transition mode toolbar button
     QAction      *m_actAddArc;         ///< Add Arc mode toolbar button
+    QAction      *m_actRun;            ///< Run toolbar button
+    QAction      *m_actStop;           ///< Stop toolbar button
+    QAction      *m_actStep;           ///< Step toolbar button
+    QAction      *m_actAuto;           ///< Auto (continuous) toolbar button
+    QTimer       *m_autoTimer;         ///< fires stepInterpreter() repeatedly in Auto mode
 
     QDockWidget    *m_propertiesDock;  ///< right-side properties dock
     PropertiesPanel *m_propertiesPanel; ///< content of the properties dock
 
+    QDockWidget    *m_monitorDock = nullptr; ///< right-side monitor dock (shown when running)
+
     QDockWidget  *m_logDock;    ///< bottom event log dock
     EventLogView *m_eventLog;   ///< content of the log dock
 
-    QDockWidget *m_injectDock  = nullptr; ///< left-side inject dock (Monitor tab only)
+    QDockWidget *m_injectDock  = nullptr; ///< left-side inject dock
     InjectPanel *m_injectPanel = nullptr; ///< content of the inject dock
 
     AppController *m_controller; ///< central application controller

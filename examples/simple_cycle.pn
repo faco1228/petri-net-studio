@@ -1,0 +1,36 @@
+Meno siete:
+    simple_cycle
+
+Komentár:
+    Simple token cycle. No events needed — use Step to advance.
+    Each step moves tokens: P1->P2->P3->P1.
+
+Vstupy:
+
+Výstupy:
+
+Premenné:
+
+Miesta (počiatočné tokeny, voliteľne akcie):
+    P1 (3) pos: 200,100
+    P2 (0) pos: 400,100
+    P3 (0) pos: 300,280
+
+Prechody a ich podmienky:
+T1 pos: 300,100 :
+    in:  P1*1
+    out: P2*1
+    when:
+    do: {  }
+
+T2 pos: 400,200 :
+    in:  P2*1
+    out: P3*1
+    when:
+    do: {  }
+
+T3 pos: 200,200 :
+    in:  P3*1
+    out: P1*1
+    when:
+    do: {  }

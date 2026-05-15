@@ -36,6 +36,7 @@ static constexpr int UDP_MAX_PAYLOAD = 65507;
 enum class MsgType {
     INPUT,    ///< GUI -> interpreter: inject an input value
     QUIT,     ///< GUI -> interpreter: request graceful shutdown
+    STEP,     ///< GUI -> interpreter: fire one maximal transition set immediately
     STATE,    ///< interpreter -> GUI: current marking snapshot
     LOG,      ///< interpreter -> GUI: single event log entry
     ANNOUNCE, ///< interpreter -> GUI: hello / register with GUI
@@ -171,6 +172,7 @@ inline MsgType parseMsgType(const std::string &raw) {
     if (parts.empty()) return MsgType::UNKNOWN;
     if (parts[0] == "INPUT")    return MsgType::INPUT;
     if (parts[0] == "QUIT")     return MsgType::QUIT;
+    if (parts[0] == "STEP")     return MsgType::STEP;
     if (parts[0] == "STATE")    return MsgType::STATE;
     if (parts[0] == "LOG")      return MsgType::LOG;
     if (parts[0] == "ANNOUNCE") return MsgType::ANNOUNCE;
