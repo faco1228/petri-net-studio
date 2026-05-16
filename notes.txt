@@ -1,8 +1,0 @@
-error code 9 - interpreter
-oznacenie viacerych a pohyb
-
-zjednotit editor a monitor
-spravit to viac user-friendly
-spustenie: run/stop/step
-
-monitor nedava zmysel???

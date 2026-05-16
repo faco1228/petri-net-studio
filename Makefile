@@ -39,6 +39,7 @@ clean:
 	rm -rf src/Makefile src/*.o
 	rm -rf doc/html doc/latex
 	rm -rf generated/*.cpp generated/interpreter_*
+	rm -f tests/test_roundtrip
 	rm -f $(ARCHIVE)
 
 pack: clean
