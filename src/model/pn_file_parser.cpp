@@ -87,8 +87,16 @@ std::unique_ptr<PnNet> PnFileParser::parse(const std::string &path, std::string 
         { {"Přechody",    "Prechody"},        &PnFileParser::parseTransitions,true  },
     };
 
+    // Flat list of all known section headers used to detect fence lines
+    std::vector<std::string> allHeaders;
+    for (auto &s : sections)
+        for (auto &h : s.headers)
+            allHeaders.push_back(h);
+
     for (auto &sec : sections) {
-        // Seek forward to a line that starts with any of the accepted headers
+        // Seek forward to a line that starts with any of the accepted headers.
+        // Stop early if we hit any OTHER known section header (fence) so that
+        // optional sections never consume lines belonging to later sections.
         bool found = false;
         while (!atEnd()) {
             std::string stripped = trim(stripComment(currentLine()));
@@ -99,6 +107,12 @@ std::unique_ptr<PnNet> PnFileParser::parse(const std::string &path, std::string 
                 }
             }
             if (found) { advance(); break; }
+            // If this line is any other section header, stop seeking
+            bool fence = false;
+            for (const auto &h : allHeaders) {
+                if (stripped.find(h) == 0) { fence = true; break; }
+            }
+            if (fence) break;
             advance();
         }
 
