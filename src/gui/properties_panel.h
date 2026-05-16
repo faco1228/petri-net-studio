@@ -66,8 +66,11 @@ signals:
     void arcApplied(int arcId);
 
 private slots:
+    /** @brief Reads the place form fields and writes them back to the model. */
     void applyPlace();
+    /** @brief Reads the transition form fields and writes them back to the model. */
     void applyTransition();
+    /** @brief Reads the arc form fields and writes them back to the model. */
     void applyArc();
 
 private:

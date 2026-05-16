@@ -60,21 +60,35 @@ protected:
     void closeEvent(QCloseEvent *event) override;
 
 private slots:
+    /** @brief Creates a blank net via the NewNetDialog. */
     void onNewNet();
+    /** @brief Shows a file-open dialog and loads the selected .pn file. */
     void onOpenNet();
+    /** @brief Saves the net to the current path, or falls back to Save As. */
     void onSaveNet();
+    /** @brief Shows a file-save dialog and saves the net to the chosen path. */
     void onSaveNetAs();
+    /** @brief Generates C++ interpreter, compiles, and starts it as a subprocess. */
     void onGenerateAndRun();
+    /** @brief Sends QUIT to the interpreter and stops the subprocess. */
     void onStopInterpreter();
+    /** @brief Sends a STEP command to the interpreter. */
     void onStepInterpreter();
+    /** @brief Toggles Auto-step mode; starts/stops the 200 ms step timer. */
     void onToggleAuto();
+    /** @brief Shows the About dialog. */
     void onAbout();
+    /** @brief Opens the Net Properties dialog (inputs, outputs, variables). */
     void onNetProperties();
+    /** @brief Activates the editor mode matching the triggered toolbar action. */
     void onModeActionTriggered(QAction *action);
+    /** @brief Reloads the editor scene after a net is loaded from disk. */
     void onNetLoaded();
+    /** @brief Handles an ANNOUNCE datagram; auto-loads the matching .pn file. */
     void onAnnounceReceived(const AnnounceMsg &msg);
-    /** @brief Updates Run/Stop/Step button states when interpreter starts or stops. */
+    /** @brief Updates Run/Stop/Step button states when the interpreter starts. */
     void onInterpreterStarted();
+    /** @brief Updates Run/Stop/Step button states when the interpreter stops. */
     void onInterpreterStopped();
 
 private:

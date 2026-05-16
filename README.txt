@@ -38,14 +38,18 @@ Generátor kódu a beh (src/codegen/, src/network/):
   [x] Jedným kliknutím vygeneruje standalone C++ interpreter (net_<Meno>.cpp)
   [x] Automaticky ho preloží pomocou g++ -std=c++17
   [x] Spustí interpret ako podproces (QProcess)
-  [x] Komunikácia s interpretom cez UDP (port 45000 predvolene)
+  [x] Komunikácia s interpretom cez UDP (interpret je na porte 7000, GUI port 7001)
   [x] Injektovanie vstupných udalostí za behu cez panel (InjectPanel)
   [x] Poslanie príkazu QUIT pre riadené ukončenie interpretu
+  [x] Step mode: ručné krokovanie (jeden krok = jedna maximálna množina prechodov)
+  [x] Auto mode: automatické krokovanie každých ~200 ms
 
 Runtime monitor:
   [x] Tabuľka živých počtov tokenov vo všetkých miestach (farebné zvýraznenie
       nenulových hodnôt)
+  [x] Tabuľka aktuálnych hodnôt premenných siete
   [x] Prehľad momentálne povolených prechodov (enabled transitions)
+  [x] Farebné zvýraznenie prechodov na plátne: zelená = enabled, oranžová = pending timer
   [x] Log udalostí: odpálenia prechodov, zmeny tokenov, výstupy, externé vstupy
   [x] Statusový riadok: "Running" / "Stopped"
 
@@ -60,10 +64,13 @@ Inskripčný jazyk (generovaný interpret):
       s menom siete; GUI sa pokúsi načítať zodpovedajúci .pn súbor
 
 Príklady (examples/):
-  tof_pn_5s.pn   — Timer Off 5 s (jednoduchá verzia)
-  tof_pn.pn      — Timer Off s nastaviteľným timeoutom a dotazom na zostatok
-  semaphore.pn   — Semafor so zdrojmi
-  test1.pn       — Jednoduchý testovací príklad
+  simple_cycle.pn      — Jednoduchý cyklus tokenov (P1→P2→P3→P1), krokovanie
+  producer_consumer.pn — Producent-konzument s obmedzeným bufferom (kapacita 3)
+  semaphore.pn         — Semafor: dva procesy súťažia o zdieľaný zdroj
+  tof_pn_5s.pn         — Timer Off 5 s
+  tof_pn.pn            — Timer Off s nastaviteľným timeoutom a dotazom na zostatok
+  testnet.pn           — Minimálny testovací príklad s delayed prechodom
+  test1.pn             — Ďalší testovací príklad
 
 
 Obmedzenia / Známe nedostatky
@@ -118,12 +125,15 @@ Používanie (Usage)
 7. Spustenie interpretu a monitoring
    Run → Generate && Run  (alebo F5)
      — vygeneruje C++ interpreter, preloží ho cez g++ a spustí.
-     — automaticky prepne na záložku Monitor.
-   Monitor záložka zobrazuje:
+     — automaticky zobrazí Monitor dock panel.
+   Run → Step  — vykoná jeden krok (jednu maximálnu množinu prechodov).
+   Run → Auto  — zapne automatické krokovanie každých ~200 ms (prepínač).
+   Monitor panel zobrazuje:
      - tabuľku živých počtov tokenov (zelená = nenulový)
+     - tabuľku aktuálnych hodnôt premenných
      - zoznam aktuálne enabled prechodov
      - log udalostí (FIRED, INPUT_RECEIVED, OUTPUT, TIMEOUT_IGNORED …)
-   Inject Input panel (ľavá dokovaná plocha):
+   Inject Input panel (dokovaná plocha):
      - vyber vstup z rozbaľovacieho zoznamu, zadaj hodnotu, klikni Send.
    Run → Stop  (alebo F6) — pošle QUIT interpretu a zastaví ho.
 
@@ -192,10 +202,13 @@ Závislosti:
         new_net_dialog.{h,cpp}       — dialóg pre novú sieť
         place_dialog.{h,cpp}         — dialóg pre editáciu miesta
         transition_dialog.{h,cpp}    — dialóg pre editáciu prechodu
+        arc_dialog.{h,cpp}           — dialóg pre editáciu hrany
         variables_dialog.{h,cpp}     — dialóg pre správu premenných
   examples/               — príklady .pn sietí
-  doc/                    — generovaná Doxygen dokumentácia (make doxygen)
-  design.pdf              — diagram tried (konceptuálny návrh)
+  doc/
+    design.pdf            — diagram tried
+    class_diagram.drawio  — zdrojový súbor diagramu tried
+    html/                 — generovaná Doxygen dokumentácia (make doxygen)
   Doxyfile                — konfigurácia Doxygen
   Makefile                — hlavný Makefile
   README.txt              — tento súbor
