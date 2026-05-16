@@ -10,9 +10,10 @@
  *
  * What happens here:
  *   1. Shows a table of place names and their live token counts
- *   2. Shows a label listing currently enabled transitions
- *   3. Subscribes to AppController::interpreterStarted/Stopped for status display
- *   4. Uses a MonitorAdapter to receive StateMsg updates from UdpClient
+ *   2. Shows a table of variable names and their current values
+ *   3. Shows a label listing currently enabled transitions
+ *   4. Subscribes to AppController::interpreterStarted/Stopped for status display
+ *   5. Uses a MonitorAdapter to receive StateMsg updates from UdpClient
  */
 
 #ifndef MONITOR_PANEL_H
@@ -31,6 +32,7 @@ class MonitorAdapter;
  *
  * Place token counts are refreshed on every incoming StateMsg.  Non-zero
  * token counts are highlighted in green for quick visual inspection.
+ * Variable values are shown in a second table below the place table.
  */
 class MonitorPanel : public QWidget
 {
@@ -56,6 +58,7 @@ public slots:
 
 private:
     QTableWidget*   m_placeTable   = nullptr; ///< two-column table: place name | token count
+    QTableWidget*   m_varsTable    = nullptr; ///< two-column table: variable name | current value
     QLabel*         m_enabledLabel = nullptr; ///< displays currently enabled transitions
     QLabel*         m_statusLabel  = nullptr; ///< shows "Running" / "Stopped"
     MonitorAdapter* m_adapter      = nullptr; ///< forwards UdpClient signals
