@@ -37,6 +37,9 @@ doxygen:
 clean:
 	-$(MAKE) -C src clean 2>/dev/null || true
 	rm -rf src/Makefile src/*.o
+	rm -rf src/icp_petri src/icp_petri.app
+	rm -rf src/.qmake.stash src/moc_predefs.h
+	rm -rf src/moc_*.cpp src/moc_*.o
 	rm -rf doc/html doc/latex
 	rm -rf generated/*.cpp generated/interpreter_*
 	rm -f tests/test_roundtrip

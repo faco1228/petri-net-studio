@@ -67,9 +67,8 @@ Príklady (examples/):
   simple_cycle.pn      — Jednoduchý cyklus tokenov (P1→P2→P3→P1), krokovanie
   producer_consumer.pn — Producent-konzument s obmedzeným bufferom (kapacita 3)
   semaphore.pn         — Semafor: dva procesy súťažia o zdieľaný zdroj
-  tof_pn_5s.pn         — Timer Off 5 s
-  tof_pn.pn            — Timer Off s nastaviteľným timeoutom a dotazom na zostatok
-  testnet.pn           — Minimálny testovací príklad s delayed prechodom
+  tof_pn_5s.pn         — Timer Off 5 s (zadaný príklad)
+  tof_pn.pn            — Timer Off s nastaviteľným timeoutom a dotazom na zostatok (zadaný príklad)
   test1.pn             — Ďalší testovací príklad
 
 
